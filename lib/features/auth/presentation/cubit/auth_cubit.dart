@@ -2,39 +2,91 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Nanti ini akan dipindah ke Repository
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 part 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  late StreamSubscription<User?> _userSubscription;
+  final FirebaseAuth _firebaseAuth;
+  final FirebaseFirestore _firestore;
+  late StreamSubscription _authSubscription;
 
-  AuthCubit() : super(AuthInitial()) {
-    // Ini adalah "listener" canggih.
-    // Cubit ini akan "mendengarkan" status login dari Firebase secara real-time.
-    _userSubscription = _auth.authStateChanges().listen((User? user) {
+  AuthCubit({
+    required FirebaseAuth firebaseAuth,
+    required FirebaseFirestore firestore,
+  })  : _firebaseAuth = firebaseAuth,
+        _firestore = firestore,
+        super(AuthInitial()) {
+    // Mendengarkan perubahan status auth secara real-time
+    _authSubscription =
+        _firebaseAuth.authStateChanges().listen((User? user) {
       if (user == null) {
-        // Jika user null, kita kirim state Unauthenticated
-        emit(const Unauthenticated());
+        emit(Unauthenticated());
       } else {
-        // Jika user ada, kita kirim state Authenticated
-        emit(Authenticated(user: user));
+        emit(Authenticated(user));
       }
     });
   }
 
-  // Fungsi untuk logout
-  Future<void> signOut() async {
-    await _auth.signOut();
+  // FUNGSI YANG HILANG (ERROR MERAH 6)
+  Future<void> signUpWithEmail({
+    required String email,
+    required String password,
+    required String username,
+  }) async {
+    emit(AuthLoading());
+    try {
+      // 1. Buat user di Auth
+      UserCredential userCredential =
+          await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      User? user = userCredential.user;
+      if (user != null) {
+        // 2. Simpan data user (username) di Firestore
+        await _firestore.collection('users').doc(user.uid).set({
+          'username': username,
+          'email': email,
+        });
+        // State Authenticated akan di-emit oleh listener
+      }
+    } on FirebaseAuthException catch (e) {
+      emit(AuthError(e.message ?? 'Terjadi kesalahan saat daftar.'));
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
   }
 
-  // Fungsi-fungsi lain (login, register) akan ada di Cubit terpisah
-  // Ini HANYA untuk memantau status global
+  // FUNGSI YANG HILANG (ERROR MERAH 3)
+  Future<void> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    emit(AuthLoading());
+    try {
+      await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      // State Authenticated akan di-emit oleh listener
+    } on FirebaseAuthException catch (e) {
+      emit(AuthError(e.message ?? 'Terjadi kesalahan saat login.'));
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
+  Future<void> signOut() async {
+    await _firebaseAuth.signOut();
+    // State Unauthenticated akan di-emit oleh listener
+  }
 
   @override
   Future<void> close() {
-    _userSubscription.cancel(); // Matikan listener saat Cubit ditutup
+    _authSubscription.cancel();
     return super.close();
   }
 }

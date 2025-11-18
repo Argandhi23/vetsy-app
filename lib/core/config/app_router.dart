@@ -2,15 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vetsy_app/features/auth/presentation/cubit/auth_cubit.dart';
-import 'package:vetsy_app/features/auth/screens/home_screen.dart';
-import 'package:vetsy_app/features/auth/screens/login_screen.dart';
-import 'package:vetsy_app/features/auth/screens/register_screen.dart';
-import 'package:vetsy_app/features/auth/screens/wrapper_screen.dart';
-
-// ===== IMPORT DENGAN PATH YANG BENAR =====
-
+import 'package:vetsy_app/features/auth/presentation/screens/login_screen.dart';
+import 'package:vetsy_app/features/auth/presentation/screens/register_screen.dart';
+import 'package:vetsy_app/features/auth/presentation/screens/wrapper_screen.dart';
+import 'package:vetsy_app/features/home/presentation/screens/home_screen.dart';
 import 'package:vetsy_app/features/clinic/presentation/screens/clinic_detail_screen.dart';
-// ==========================================
+import 'package:vetsy_app/features/booking/presentation/screens/booking_screen.dart';
+import 'package:vetsy_app/features/clinic/domain/entities/service_entity.dart';
 
 class AppRouter {
   final AuthCubit authCubit;
@@ -32,56 +30,75 @@ class AppRouter {
         path: RegisterScreen.route, // Rute: '/register'
         builder: (context, state) => const RegisterScreen(),
       ),
-      // MODIFIKASI RUTE HOME
       GoRoute(
         path: HomeScreen.route, // Rute: '/home'
-        builder: (context, state) => const HomeScreen(),
-        // TAMBAHKAN SUB-RUTE (CHILD ROUTE)
+        builder: (context, state) => HomeScreen(),
         routes: [
+          // SUB-RUTE DETAIL
           GoRoute(
-            name: ClinicDetailScreen.routeName, // <-- Beri nama
-            path: ':clinicId', // <-- :clinicId adalah parameter
+            name: ClinicDetailScreen.routeName, // '/home/:clinicId'
+            path: ':clinicId',
             builder: (context, state) {
-              // Ambil parameter clinicId dari URL
               final clinicId = state.pathParameters['clinicId']!;
               return ClinicDetailScreen(clinicId: clinicId);
             },
+            // SUB-RUTE BOOKING (DI DALAM DETAIL)
+            routes: [
+              GoRoute(
+                name: BookingScreen.routeName, // '/home/:clinicId/book'
+                path: BookingScreen.routePath, // 'book'
+                builder: (context, state) {
+                  final Map<String, dynamic> data =
+                      state.extra as Map<String, dynamic>;
+                  final String clinicId = data['clinicId'];
+                  final String clinicName = data['clinicName'];
+                   final ServiceEntity service = data['service'];
+
+                  return BookingScreen(
+                    clinicId: clinicId,
+                    clinicName: clinicName,
+                    service: service,
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),
     ],
 
-    // LOGIKA REDIRECT OTOMATIS (Sudah benar)
+    // ===== PERBAIKI LOGIKA REDIRECT =====
     redirect: (BuildContext context, GoRouterState state) {
       final authState = authCubit.state;
-
       final isAtWrapper = state.matchedLocation == WrapperScreen.route;
-      final isLoggingIn = state.matchedLocation == LoginScreen.route ||
-          state.matchedLocation == RegisterScreen.route;
+      
+      // JIKA KITA SUDAH DI WRAPPER, JANGAN LAKUKAN APA-APA.
+      // Biarkan WrapperScreen yang mengatur navigasinya sendiri.
+      if (isAtWrapper) {
+        return null;
+      }
+
+      final isGoingToAuth = state.matchedLocation.startsWith(LoginScreen.route) ||
+                            state.matchedLocation.startsWith(RegisterScreen.route);
 
       // KASUS 1: USER SUDAH LOGIN
       if (authState is Authenticated) {
-        if (isAtWrapper || isLoggingIn) return HomeScreen.route;
+        // Jika user login & mencoba ke halaman auth, lempar ke home
+        if (isGoingToAuth) return HomeScreen.route;
       }
 
       // KASUS 2: USER BELUM LOGIN
       if (authState is Unauthenticated) {
-        if (isAtWrapper) return LoginScreen.route;
-        
-        // Cek path utama, bukan sub-rute
-        final isGoingToAuth = state.matchedLocation.startsWith(LoginScreen.route) ||
-                              state.matchedLocation.startsWith(RegisterScreen.route);
-
-        // Jika user belum login DAN mencoba akses halaman selain auth
+        // Jika user belum login & mencoba ke area terproteksi (bukan auth)
         if (!isGoingToAuth) return LoginScreen.route;
       }
 
+      // (AuthInitial akan otomatis jatuh ke null, yang berarti "tetap di tempat")
       return null;
     },
   );
 }
 
-// ... (GoRouterRefreshStream tetap sama) ...
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     stream.asBroadcastStream().listen((_) => notifyListeners());

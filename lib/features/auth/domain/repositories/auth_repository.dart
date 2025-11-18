@@ -3,6 +3,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:vetsy_app/core/errors/failures.dart';
+import 'package:vetsy_app/features/auth/domain/entities/user_entity.dart';
 
 // Ini adalah 'kontrak'
 // Dia mendefinisikan 'apa' yang bisa dilakukan,
@@ -23,6 +24,8 @@ abstract class AuthRepository {
   });
 
   Future<Either<Failure, void>> signOut();
+
+  Future<Either<Failure, UserEntity>> getUserProfile();
 
   // Kita tidak perlu state stream di sini,
   // karena AuthCubit global sudah menanganinya

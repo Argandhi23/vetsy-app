@@ -1,50 +1,55 @@
 // lib/core/config/app_theme.dart
 import 'package:flutter/material.dart';
-
-// 1. Definisikan warna "Vetsy Blue" kamu
-const Color vetsyBlue = Colors.blueAccent; // Ganti ini jika punya Hex
+import 'package:google_fonts/google_fonts.dart'; // <-- 1. IMPORT FONT BARU
 
 class AppTheme {
-  // 2. Buat tema terang (light theme)
-  static final ThemeData lightTheme = ThemeData(
-    useMaterial3: true,
-    // 3. Tentukan ColorScheme
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: vetsyBlue,
-      brightness: Brightness.light,
-    ),
-    
-    // 4. Atur tema komponen lain
-    scaffoldBackgroundColor: Colors.grey[50], // Latar belakang
-    
-    appBarTheme: AppBarTheme(
-      backgroundColor: vetsyBlue, // AppBar jadi biru
-      foregroundColor: Colors.white, // Teks & Ikon di AppBar jadi putih
-      elevation: 2,
-    ),
+  static final Color _primaryColor = Colors.blue[800]!;
 
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: vetsyBlue, // Tombol jadi biru
-        foregroundColor: Colors.white, // Teks tombol jadi putih
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+  static ThemeData get lightTheme {
+    return ThemeData(
+      primarySwatch: Colors.blue,
+      primaryColor: _primaryColor,
+      
+      // 2. GANTI FONT GLOBAL (textTheme)
+      textTheme: GoogleFonts.poppinsTextTheme(
+        ThemeData.light().textTheme,
+      ),
+
+      // 3. (OPSIONAL) Rombak styling tombol agar lebih modern
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _primaryColor,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10), // Lebih bulat
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         ),
       ),
-    ),
 
-    inputDecorationTheme: InputDecorationTheme(
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+      // 4. (OPSIONAL) Rombak styling AppBar
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 1,
+        // Terapkan font Poppins ke judul AppBar juga
+        titleTextStyle: GoogleFonts.poppins(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Colors.black87,
+        ),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: vetsyBlue, width: 2),
-      ),
-      labelStyle: const TextStyle(color: vetsyBlue),
-    ),
-  );
 
-  // (Opsional) Buat juga tema gelap jika perlu
-  // static final ThemeData darkTheme = ...
+      // 5. (OPSIONAL) Rombak styling BottomNavBar
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        selectedItemColor: _primaryColor,
+        unselectedItemColor: Colors.grey[600],
+        type: BottomNavigationBarType.fixed,
+        // Terapkan font Poppins ke label nav bar
+        selectedLabelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        unselectedLabelStyle: GoogleFonts.poppins(),
+      ),
+
+    );
+  }
 }
