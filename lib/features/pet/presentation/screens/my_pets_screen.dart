@@ -118,7 +118,7 @@ class MyPetsScreen extends StatelessWidget {
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 300),
                           child: Lottie.asset(
-                            'assets/lottie/empty_pets.json', 
+                            'assets/lottie/logo_splash.json', 
                             fit: BoxFit.contain,
                           ),
                         ),
