@@ -83,6 +83,7 @@ class MyPetsScreen extends StatelessWidget {
         builder: (ctx) => FloatingActionButton.extended(
           onPressed: () => _showPetFormModal(ctx),
           backgroundColor: Theme.of(context).primaryColor,
+          foregroundColor: Colors.white,
           icon: const Icon(EvaIcons.plus),
           label: const Text("Tambah Hewan"),
           elevation: 4,

@@ -73,8 +73,8 @@ class MyBookingsScreen extends StatelessWidget {
                 final String fullDate = DateFormat('EEEE, HH:mm', 'id_ID').format(booking.scheduleDate);
 
                 return Card(
-                  elevation: 2,
-                  shadowColor: Colors.black.withOpacity(0.1),
+                  elevation: 8,
+                  shadowColor: Colors.black.withOpacity(0.4),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)
                   ),

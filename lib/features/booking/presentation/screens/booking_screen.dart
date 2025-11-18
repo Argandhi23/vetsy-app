@@ -288,7 +288,7 @@ class BookingView extends StatelessWidget {
                             icon: EvaIcons.calendarOutline,
                             label: 'Tanggal',
                             value: state.selectedDate == null
-                                ? 'Pilih Tgl'
+                                ? 'Pilih Tanggal'
                                 : DateFormat('d MMM yyyy', 'id_ID')
                                     .format(state.selectedDate!),
                             isSelected: state.selectedDate != null,
@@ -468,6 +468,7 @@ class BookingView extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.red,
                       decoration: TextDecoration.underline,
+                      decorationColor: Colors.red,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
