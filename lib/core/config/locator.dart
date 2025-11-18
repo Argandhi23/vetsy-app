@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get_it/get_it.dart';
 
-// ... (Semua import Auth, Clinic, Pet, Booking, Profile) ...
+// Imports...
 import 'package:vetsy_app/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:vetsy_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:vetsy_app/features/auth/domain/usecases/get_user_profile_usecase.dart';
@@ -33,33 +33,27 @@ import 'package:vetsy_app/features/booking/domain/usecases/create_booking_usecas
 import 'package:vetsy_app/features/booking/domain/usecases/get_my_bookings_usecase.dart';
 import 'package:vetsy_app/features/booking/presentation/cubit/booking_cubit.dart';
 import 'package:vetsy_app/features/booking/presentation/cubit/my_bookings/my_bookings_cubit.dart';
-
 import 'package:vetsy_app/features/profile/presentation/cubit/profile_cubit.dart';
 
-
-final sl = GetIt.instance; // 'sl' = Service Locator
+final sl = GetIt.instance; 
 
 Future<void> setupLocator() async {
   
-  // ===================================
   // EXTERNAL
-  // ===================================
   sl.registerSingleton<FirebaseAuth>(FirebaseAuth.instance);
   sl.registerSingleton<FirebaseFirestore>(FirebaseFirestore.instance);
 
-  // ===================================
-  // AUTHENTICATION FEATURE
-  // ===================================
+  // AUTH
   sl.registerLazySingleton<AuthCubit>(
       () => AuthCubit(firebaseAuth: sl(), firestore: sl()));
   sl.registerFactory(() => GetUserProfileUseCase(repository: sl()));
   sl.registerLazySingleton<AuthRepository>(
       () => AuthRepositoryImpl(firebaseAuth: sl(), firestore: sl()));
 
-  // ===================================
-  // CLINIC FEATURE
-  // ===================================
-  sl.registerFactory(() => ClinicCubit(getClinicsUseCase: sl()));
+  // CLINIC
+  // PERBAIKAN: Ganti Factory jadi Singleton agar data persisten
+  sl.registerLazySingleton(() => ClinicCubit(getClinicsUseCase: sl()));
+  
   sl.registerFactory(() => ClinicDetailCubit(getClinicDetailUseCase: sl()));
   sl.registerFactory(() => GetClinicsUseCase(repository: sl()));
   sl.registerFactory(() => GetClinicDetailUseCase(repository: sl()));
@@ -68,20 +62,13 @@ Future<void> setupLocator() async {
   sl.registerLazySingleton<ClinicRemoteDataSource>(
       () => ClinicRemoteDataSourceImpl(firestore: sl()));
 
-  // ===================================
-  // PET FEATURE
-  // ===================================
-
-  // ===== INI PERBAIKANNYA =====
-  // Ubah 'registerFactory' menjadi 'registerLazySingleton'
+  // PET
   sl.registerLazySingleton(() => MyPetsCubit(
         getMyPetsUseCase: sl(),
         addPetUseCase: sl(),
         deletePetUseCase: sl(),
         updatePetUseCase: sl(),
       ));
-  // ============================
-  
   sl.registerFactory(() => GetMyPetsUseCase(repository: sl()));
   sl.registerFactory(() => AddPetUseCase(repository: sl()));
   sl.registerFactory(() => UpdatePetUseCase(repository: sl()));
@@ -91,9 +78,7 @@ Future<void> setupLocator() async {
   sl.registerLazySingleton<PetRemoteDataSource>(
       () => PetRemoteDataSourceImpl(firestore: sl()));
 
-  // ===================================
-  // BOOKING FEATURE
-  // ===================================
+  // BOOKING
   sl.registerFactory(() => BookingCubit(
         getMyPetsUseCase: sl(),
         createBookingUseCase: sl(),
@@ -108,12 +93,6 @@ Future<void> setupLocator() async {
   sl.registerLazySingleton<BookingRemoteDataSource>(
       () => BookingRemoteDataSourceImpl(firestore: sl()));
 
-  // ===================================
-  // PROFILE FEATURE
-  // ===================================
-
-  // ===== INI PERBAIKANNYA =====
-  // Ubah 'registerFactory' menjadi 'registerLazySingleton'
+  // PROFILE
   sl.registerLazySingleton(() => ProfileCubit(getUserProfileUseCase: sl()));
-  // ============================
 }

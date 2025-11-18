@@ -1,75 +1,209 @@
-// lib/features/profile/presentation/screens/profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sizer/sizer.dart';
-import 'package:vetsy_app/core/config/locator.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:vetsy_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:vetsy_app/features/profile/presentation/cubit/profile_cubit.dart';
-// Hapus import data_seeder jika masih ada
+// Import Seeder jika Anda ingin tombol rahasia untuk isi data klinik
+import 'package:vetsy_app/data_seeder.dart'; 
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<ProfileCubit>(), // fetch dipanggil dari main.dart
-      child: Scaffold(
-        body: BlocBuilder<ProfileCubit, ProfileState>(
-          builder: (context, state) {
-            if (state.status == ProfileStatus.loading || 
-                state.status == ProfileStatus.initial) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (state.status == ProfileStatus.error) {
-              return Center(child: Text(state.errorMessage ?? 'Error'));
-            }
-            if (state.status == ProfileStatus.loaded && state.user != null) {
-              final user = state.user!;
-              return ListView(
-                padding: EdgeInsets.all(4.w),
+    // PERBAIKAN: Provider Lokal DIHAPUS, langsung Scaffold
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      body: BlocBuilder<ProfileCubit, ProfileState>(
+        builder: (context, state) {
+          if (state.status == ProfileStatus.loading ||
+              state.status == ProfileStatus.initial) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          
+          if (state.status == ProfileStatus.loaded && state.user != null) {
+            final user = state.user!;
+            
+            return SingleChildScrollView(
+              child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 12.w,
-                    backgroundColor:
-                        Theme.of(context).primaryColor.withOpacity(0.1),
-                    child: Icon(Icons.person,
-                        size: 15.w, color: Theme.of(context).primaryColor),
+                  // --- HEADER GRADIENT & AVATAR ---
+                  Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.center,
+                    children: [
+                      // Background Gradient
+                      Container(
+                        height: 220,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Theme.of(context).primaryColor,
+                              Theme.of(context).primaryColor.withBlue(200),
+                            ],
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(30),
+                            bottomRight: Radius.circular(30),
+                          ),
+                        ),
+                      ),
+                      // Avatar Profile
+                      Positioned(
+                        bottom: -50,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(4),
+                          child: CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.grey[200],
+                            child: Icon(
+                              Icons.person, // Pakai Icons.person standard
+                              size: 50,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                        ),
+                      ).animate().scale(duration: 600.ms, curve: Curves.elasticOut), 
+                    ],
                   ),
-                  SizedBox(height: 2.h),
+
+                  const SizedBox(height: 60), // Space untuk avatar
+
+                  // --- USER INFO ---
                   Text(
                     user.username,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        // Ganti .sp menjadi statis
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold),
-                  ),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ).animate().fadeIn().slideY(begin: 0.5),
+                  
                   Text(
                     user.email,
-                    textAlign: TextAlign.center,
                     style: TextStyle(
-                        // Ganti .sp menjadi statis
-                        fontSize: 16,
-                        color: Colors.grey[600]),
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.5),
+
+                  const SizedBox(height: 30),
+
+                  // --- MENU OPTIONS ---
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        _buildMenuTile(
+                          context,
+                          icon: EvaIcons.settings2Outline,
+                          title: 'Pengaturan Akun',
+                          onTap: () {},
+                        ),
+                        const SizedBox(height: 16),
+                        _buildMenuTile(
+                          context,
+                          icon: EvaIcons.questionMarkCircleOutline,
+                          title: 'Bantuan & Dukungan',
+                          onTap: () {},
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Tombol Seed Data (Khusus Developer)
+                        _buildMenuTile(
+                          context,
+                          icon: EvaIcons.cloudUploadOutline,
+                          title: 'Isi Data Klinik (Dev Only)',
+                          onTap: () async {
+                            await seedData();
+                            if(context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Data klinik berhasil ditambahkan!')),
+                              );
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        _buildMenuTile(
+                          context,
+                          icon: EvaIcons.logOutOutline,
+                          title: 'Keluar Aplikasi',
+                          isDanger: true,
+                          onTap: () {
+                            context.read<AuthCubit>().signOut();
+                          },
+                        ),
+                      ],
+                    ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
                   ),
-                  SizedBox(height: 4.h),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.logout, color: Colors.red),
-                    title: const Text('Logout',
-                        style: TextStyle(color: Colors.red)),
-                    onTap: () {
-                      context.read<AuthCubit>().signOut();
-                    },
-                  ),
-                  const Divider(),
+                  
+                  const SizedBox(height: 40),
                 ],
-              );
-            }
-            return const Center(child: Text('Memuat profil...'));
-          },
+              ),
+            );
+          }
+          return const Center(child: Text('Error memuat profil'));
+        },
+      ),
+    );
+  }
+
+  Widget _buildMenuTile(BuildContext context,
+      {required IconData icon,
+      required String title,
+      required VoidCallback onTap,
+      bool isDanger = false}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: isDanger ? Colors.red.withOpacity(0.1) : Theme.of(context).primaryColor.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: isDanger ? Colors.red : Theme.of(context).primaryColor,
+            size: 22,
+          ),
         ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: isDanger ? Colors.red : Colors.black87,
+          ),
+        ),
+        trailing: const Icon(EvaIcons.arrowIosForward, size: 18, color: Colors.grey),
+        onTap: onTap,
       ),
     );
   }

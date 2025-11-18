@@ -1,16 +1,18 @@
-// lib/main.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sizer/sizer.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:vetsy_app/core/config/app_router.dart';
 import 'package:vetsy_app/core/config/app_theme.dart';
 import 'package:vetsy_app/core/config/locator.dart';
+// Import Cubit
 import 'package:vetsy_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:vetsy_app/features/booking/presentation/cubit/my_bookings/my_bookings_cubit.dart';
 import 'package:vetsy_app/features/pet/presentation/cubit/my_pets_cubit.dart';
-import 'package:vetsy_app/features/profile/presentation/cubit/profile_cubit.dart'; // <-- IMPORT BARU
+import 'package:vetsy_app/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:vetsy_app/features/clinic/presentation/cubit/clinic_cubit.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -18,7 +20,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  await setupLocator(); 
+  await setupLocator();
+  await initializeDateFormatting('id_ID', null);
+
   runApp(const MainApp());
 }
 
@@ -34,17 +38,17 @@ class _MainAppState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
+    // LOGIC FIX: Reset data saat logout, Fetch data saat login
     _authSubscription = sl<AuthCubit>().stream.listen((authState) {
       if (authState is Authenticated) {
-        // Jika user BARU login, panggil fetch
         sl<MyPetsCubit>().fetchMyPets();
         sl<MyBookingsCubit>().fetchMyBookings();
-        sl<ProfileCubit>().fetchUserProfile(); // <-- TAMBAHKAN INI
+        sl<ProfileCubit>().fetchUserProfile();
+        sl<ClinicCubit>().fetchClinics();
       } else if (authState is Unauthenticated) {
-        // Jika user Logout, RESET data
         sl<MyPetsCubit>().reset();
         sl<MyBookingsCubit>().reset();
-        sl<ProfileCubit>().reset(); // <-- TAMBAHKAN INI
+        sl<ProfileCubit>().reset();
       }
     });
   }
@@ -59,12 +63,19 @@ class _MainAppState extends State<MainApp> {
   Widget build(BuildContext context) {
     return Sizer(
       builder: (context, orientation, deviceType) {
-        return BlocProvider(
-          create: (context) => sl<AuthCubit>(),
+        // LOGIC FIX: MultiBlocProvider di root
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (context) => sl<AuthCubit>()),
+            BlocProvider(create: (context) => sl<MyPetsCubit>()),
+            BlocProvider(create: (context) => sl<MyBookingsCubit>()),
+            BlocProvider(create: (context) => sl<ProfileCubit>()),
+            BlocProvider(create: (context) => sl<ClinicCubit>()),
+          ],
           child: MaterialApp.router(
             title: 'Vetsy App',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme, 
+            theme: AppTheme.lightTheme,
             routerConfig: AppRouter(authCubit: sl<AuthCubit>()).router,
           ),
         );

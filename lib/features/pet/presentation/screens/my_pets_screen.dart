@@ -1,8 +1,8 @@
-// lib/features/pet/presentation/screens/my_pets_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lottie/lottie.dart';
-import 'package:sizer/sizer.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:vetsy_app/core/config/locator.dart';
 import 'package:vetsy_app/features/pet/domain/entities/pet_entity.dart';
 import 'package:vetsy_app/features/pet/presentation/cubit/my_pets_cubit.dart';
@@ -15,12 +15,16 @@ class MyPetsScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => BlocProvider.value(
-        value: BlocProvider.of<MyPetsCubit>(context),
-        child: AddPetForm(petToEdit: petToEdit),
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: BlocProvider.value(
+          value: BlocProvider.of<MyPetsCubit>(context),
+          child: AddPetForm(petToEdit: petToEdit),
+        ),
       ),
     );
   }
@@ -31,21 +35,36 @@ class MyPetsScreen extends StatelessWidget {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Hapus Hewan'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(EvaIcons.alertTriangleOutline, color: Colors.red),
+              SizedBox(width: 10),
+              Text('Hapus Hewan'),
+            ],
+          ),
           content: Text('Apakah Anda yakin ingin menghapus $petName?'),
           actions: <Widget>[
             TextButton(
-              child: const Text('Batal'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
+              child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+              onPressed: () => Navigator.of(dialogContext).pop(),
             ),
-            TextButton(
-              child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               onPressed: () {
                 context.read<MyPetsCubit>().deletePet(petId);
                 Navigator.of(dialogContext).pop();
               },
+              child: const Text('Hapus'),
             ),
           ],
         );
@@ -55,122 +74,203 @@ class MyPetsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<MyPetsCubit>(),
-      child: Scaffold(
-        floatingActionButton: Builder(
-          builder: (ctx) => FloatingActionButton(
-            onPressed: () => _showPetFormModal(ctx),
-            child: const Icon(Icons.add),
-            tooltip: 'Tambah Hewan',
-          ),
+    // PERBAIKAN: Provider Lokal DIHAPUS karena sudah ada di main.dart (MultiBlocProvider)
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      floatingActionButton: Builder(
+        builder: (ctx) => FloatingActionButton.extended(
+          onPressed: () => _showPetFormModal(ctx),
+          backgroundColor: Theme.of(context).primaryColor,
+          icon: const Icon(EvaIcons.plus),
+          label: const Text("Tambah Hewan"),
+          elevation: 4,
         ),
-        body: BlocListener<MyPetsCubit, MyPetsState>(
-          listener: (context, state) {
-            if (state.status == MyPetsStatus.error) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.errorMessage ?? 'Terjadi kesalahan'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+      ),
+      body: BlocListener<MyPetsCubit, MyPetsState>(
+        listener: (context, state) {
+          if (state.status == MyPetsStatus.error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage ?? 'Terjadi kesalahan'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+        child: BlocBuilder<MyPetsCubit, MyPetsState>(
+          builder: (context, state) {
+            // 1. LOADING
+            if (state.status == MyPetsStatus.loading ||
+                state.status == MyPetsStatus.initial) {
+              return const Center(child: CircularProgressIndicator());
             }
-          },
-          child: BlocBuilder<MyPetsCubit, MyPetsState>(
-            builder: (context, state) {
-              if (state.status == MyPetsStatus.loading ||
-                  state.status == MyPetsStatus.initial) {
-                return const Center(child: CircularProgressIndicator());
-              }
 
-              if (state.status == MyPetsStatus.loaded && state.pets.isEmpty) {
-                return Center(
+            // 2. EMPTY STATE
+            if (state.status == MyPetsStatus.loaded && state.pets.isEmpty) {
+              return Center(
+                child: SingleChildScrollView(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10.w),
+                    padding: const EdgeInsets.all(32.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        SizedBox(
-                          width: 60.w,
-                          height: 60.w,
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 300),
                           child: Lottie.asset(
-                            'assets/lottie/logo_splash.json',
-                            width: 60.w,
+                            'assets/lottie/empty_pets.json', 
+                            fit: BoxFit.contain,
                           ),
                         ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          'Anda belum punya hewan',
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Belum Ada Hewan',
                           style: TextStyle(
-                              // Ganti .sp menjadi statis
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold),
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
                           textAlign: TextAlign.center,
                         ),
+                        const SizedBox(height: 8),
                         Text(
-                          'Klik tombol + di bawah untuk menambah hewan peliharaan pertamamu.',
+                          'Tambahkan hewan peliharaan kesayanganmu agar bisa mulai konsultasi.',
                           style: TextStyle(
-                            // Ganti .sp menjadi statis
                             fontSize: 14,
-                            color: Colors.grey[600]),
+                            color: Colors.grey[600],
+                            height: 1.5,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ],
                     ),
                   ),
-                );
-              }
+                ),
+              ).animate().fadeIn();
+            }
 
-              if (state.status == MyPetsStatus.loaded ||
-                  state.status == MyPetsStatus.submitting) {
-                return Stack(
-                  children: [
-                    ListView.builder(
-                      padding: EdgeInsets.all(3.w),
-                      itemCount: state.pets.length,
-                      itemBuilder: (context, index) {
-                        final pet = state.pets[index];
-                        return Card(
-                          child: ListTile(
-                            leading: const Icon(Icons.pets,
-                                color: Colors.blueAccent),
-                            title: Text(pet.name,
-                                style: TextStyle(
-                                    // Ganti .sp menjadi statis
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold)),
-                            subtitle: Text(
-                              '${pet.type} - ${pet.breed}',
-                              // Ganti .sp menjadi statis
-                              style: TextStyle(fontSize: 14),
+            // 3. LIST DATA
+            if (state.status == MyPetsStatus.loaded ||
+                state.status == MyPetsStatus.submitting) {
+              return Stack(
+                children: [
+                  ListView.builder(
+                    // Padding bawah besar agar tidak tertutup FAB
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 80), 
+                    itemCount: state.pets.length,
+                    itemBuilder: (context, index) {
+                      final pet = state.pets[index];
+                      
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
-                            onTap: () {
-                              _showPetFormModal(context, petToEdit: pet);
-                            },
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline,
-                                  color: Colors.red),
-                              onPressed: () {
-                                _showDeleteConfirmation(
-                                    context, pet.id, pet.name);
-                              },
+                          ],
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () => _showPetFormModal(context, petToEdit: pet),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Row(
+                                children: [
+                                  // AVATAR HEWAN
+                                  Container(
+                                    width: 56,
+                                    height: 56,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.pets, 
+                                      color: Theme.of(context).primaryColor,
+                                      size: 28,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  
+                                  // INFO TEXT
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          pet.name,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[100],
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            '${pet.type} • ${pet.breed}',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.grey[700],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  
+                                  // DELETE BUTTON
+                                  IconButton(
+                                    icon: const Icon(
+                                      EvaIcons.trash2Outline, 
+                                      color: Colors.redAccent
+                                    ),
+                                    onPressed: () {
+                                      _showDeleteConfirmation(
+                                          context, pet.id, pet.name);
+                                    },
+                                    tooltip: 'Hapus',
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        );
-                      },
-                    ),
-                    if (state.status == MyPetsStatus.submitting)
-                      Container(
-                        color: Colors.black.withOpacity(0.3),
-                        child:
-                            const Center(child: CircularProgressIndicator()),
+                        ),
+                      )
+                      .animate()
+                      .fadeIn(duration: 400.ms)
+                      .slideX(begin: 0.1, delay: (100 * index).ms);
+                    },
+                  ),
+                  
+                  // Loading overlay saat menghapus/edit
+                  if (state.status == MyPetsStatus.submitting)
+                    Container(
+                      color: Colors.black.withOpacity(0.3),
+                      child: const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
                       ),
-                  ],
-                );
-              }
-              return const Center(child: Text('Memuat data hewan...'));
-            },
-          ),
+                    ),
+                ],
+              );
+            }
+            return const Center(child: Text('Memuat data hewan...'));
+          },
         ),
       ),
     );
