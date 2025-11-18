@@ -1,3 +1,4 @@
+// lib/features/pet/presentation/screens/my_pets_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lottie/lottie.dart';
@@ -74,9 +75,10 @@ class MyPetsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // PERBAIKAN: Provider Lokal DIHAPUS karena sudah ada di main.dart (MultiBlocProvider)
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      // PERBAIKAN 1: Samakan Background dengan MyBookingsScreen
+      backgroundColor: Colors.grey[50], // Jangan Colors.white biasa
+      
       floatingActionButton: Builder(
         builder: (ctx) => FloatingActionButton.extended(
           onPressed: () => _showPetFormModal(ctx),
@@ -106,44 +108,43 @@ class MyPetsScreen extends StatelessWidget {
               return const Center(child: CircularProgressIndicator());
             }
 
-            // 2. EMPTY STATE
+            // 2. EMPTY STATE (Disesuaikan)
             if (state.status == MyPetsStatus.loaded && state.pets.isEmpty) {
               return Center(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 300),
-                          child: Lottie.asset(
-                            'assets/lottie/logo_splash.json', 
-                            fit: BoxFit.contain,
-                          ),
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // PERBAIKAN 2: Ukuran Lottie disamakan (maxWidth 200)
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 200),
+                        child: Lottie.asset(
+                          'assets/lottie/logo_splash.json', 
+                          fit: BoxFit.contain,
                         ),
-                        const SizedBox(height: 24),
-                        const Text(
-                          'Belum Ada Hewan',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                          textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Belum Ada Hewan',
+                        style: TextStyle(
+                          fontSize: 18, // Ukuran font disamakan
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Tambahkan hewan peliharaan kesayanganmu agar bisa mulai konsultasi.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                            height: 1.5,
-                          ),
-                          textAlign: TextAlign.center,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tambahkan hewan peliharaan kesayanganmu agar bisa mulai konsultasi.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          height: 1.5,
                         ),
-                      ],
-                    ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
               ).animate().fadeIn();
@@ -155,99 +156,88 @@ class MyPetsScreen extends StatelessWidget {
               return Stack(
                 children: [
                   ListView.builder(
-                    // Padding bawah besar agar tidak tertutup FAB
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 80), 
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
                     itemCount: state.pets.length,
                     itemBuilder: (context, index) {
                       final pet = state.pets[index];
                       
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
+                      return Card( // Gunakan Card agar shadow sama dengan Booking
+                        elevation: 2,
+                        shadowColor: Colors.black.withOpacity(0.1),
+                        shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                          border: Border.all(color: Colors.grey.shade200),
                         ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: () => _showPetFormModal(context, petToEdit: pet),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Row(
-                                children: [
-                                  // AVATAR HEWAN
-                                  Container(
-                                    width: 56,
-                                    height: 56,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).primaryColor.withOpacity(0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.pets, 
-                                      color: Theme.of(context).primaryColor,
-                                      size: 28,
-                                    ),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () => _showPetFormModal(context, petToEdit: pet),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Row(
+                              children: [
+                                // AVATAR HEWAN
+                                Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                    shape: BoxShape.circle,
                                   ),
-                                  const SizedBox(width: 16),
-                                  
-                                  // INFO TEXT
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          pet.name,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black87,
+                                  child: Icon(
+                                    Icons.pets, 
+                                    color: Theme.of(context).primaryColor,
+                                    size: 28,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                
+                                // INFO TEXT
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        pet.name,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[100],
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          '${pet.type} • ${pet.breed}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.grey[700],
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[100],
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: Text(
-                                            '${pet.type} • ${pet.breed}',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.grey[700],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
-                                  
-                                  // DELETE BUTTON
-                                  IconButton(
-                                    icon: const Icon(
-                                      EvaIcons.trash2Outline, 
-                                      color: Colors.redAccent
-                                    ),
-                                    onPressed: () {
-                                      _showDeleteConfirmation(
-                                          context, pet.id, pet.name);
-                                    },
-                                    tooltip: 'Hapus',
+                                ),
+                                
+                                // DELETE BUTTON
+                                IconButton(
+                                  icon: const Icon(
+                                    EvaIcons.trash2Outline, 
+                                    color: Colors.redAccent
                                   ),
-                                ],
-                              ),
+                                  onPressed: () {
+                                    _showDeleteConfirmation(
+                                        context, pet.id, pet.name);
+                                  },
+                                  tooltip: 'Hapus',
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -258,7 +248,6 @@ class MyPetsScreen extends StatelessWidget {
                     },
                   ),
                   
-                  // Loading overlay saat menghapus/edit
                   if (state.status == MyPetsStatus.submitting)
                     Container(
                       color: Colors.black.withOpacity(0.3),
