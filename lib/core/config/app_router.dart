@@ -10,8 +10,10 @@ import 'package:vetsy_app/features/clinic/presentation/screens/clinic_detail_scr
 import 'package:vetsy_app/features/booking/presentation/screens/booking_screen.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/service_entity.dart';
 import 'package:vetsy_app/features/profile/presentation/screens/edit_profile_screen.dart';
+import 'package:vetsy_app/features/profile/presentation/screens/change_password_screen.dart'; // IMPORT BARU
 import 'package:vetsy_app/features/booking/presentation/screens/booking_detail_screen.dart';
 import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
+import 'package:vetsy_app/features/admin/presentation/screens/admin_dashboard_screen.dart';
 
 class AppRouter {
   final AuthCubit authCubit;
@@ -21,13 +23,10 @@ class AppRouter {
     refreshListenable: GoRouterRefreshStream(authCubit.stream),
     initialLocation: WrapperScreen.route,
     routes: [
-      // --- ROOT / WRAPPER ---
       GoRoute(
         path: WrapperScreen.route,
         builder: (context, state) => const WrapperScreen(),
       ),
-      
-      // --- AUTHENTICATION ---
       GoRoute(
         path: OnboardingScreen.route,
         builder: (context, state) => const OnboardingScreen(),
@@ -41,19 +40,26 @@ class AppRouter {
         builder: (context, state) => const RegisterScreen(),
       ),
       
-      // --- MAIN APP ---
+      GoRoute(
+        path: AdminDashboardScreen.route,
+        builder: (context, state) => const AdminDashboardScreen(),
+      ),
+
       GoRoute(
         path: HomeScreen.route,
         builder: (context, state) => HomeScreen(),
         routes: [
-          // SUB-RUTE: EDIT PROFILE
           GoRoute(
             name: EditProfileScreen.routeName,
             path: 'edit-profile',
             builder: (context, state) => const EditProfileScreen(),
           ),
-          
-          // SUB-RUTE: BOOKING DETAIL (TIKET)
+          // RUTE BARU
+          GoRoute(
+            name: ChangePasswordScreen.routeName,
+            path: 'change-password',
+            builder: (context, state) => const ChangePasswordScreen(),
+          ),
           GoRoute(
             name: BookingDetailScreen.routeName,
             path: 'booking-detail',
@@ -62,8 +68,6 @@ class AppRouter {
               return BookingDetailScreen(booking: booking);
             },
           ),
-          
-          // SUB-RUTE: CLINIC DETAIL
           GoRoute(
             name: ClinicDetailScreen.routeName,
             path: ':clinicId',
@@ -72,7 +76,6 @@ class AppRouter {
               return ClinicDetailScreen(clinicId: clinicId);
             },
             routes: [
-              // SUB-RUTE: FORM BOOKING (Di dalam Detail Klinik)
               GoRoute(
                 name: BookingScreen.routeName,
                 path: BookingScreen.routePath,
@@ -92,41 +95,37 @@ class AppRouter {
       ),
     ],
     
-    // --- LOGIKA REDIRECT (PROTEKSI HALAMAN) ---
     redirect: (BuildContext context, GoRouterState state) {
       final authState = authCubit.state;
       
-      // Cek lokasi saat ini
       final isAtWrapper = state.matchedLocation == WrapperScreen.route;
       final isAtOnboarding = state.matchedLocation == OnboardingScreen.route;
       
-      // Jika sedang di Wrapper, biarkan logic Wrapper bekerja sendiri
       if (isAtWrapper) return null;
 
-      // Cek apakah user sedang menuju halaman Auth (Login/Register/Onboarding)
       final isGoingToAuth = state.matchedLocation.startsWith(LoginScreen.route) ||
                             state.matchedLocation.startsWith(RegisterScreen.route) ||
                             isAtOnboarding;
 
-      // SKENARIO 1: User SUDAH Login
       if (authState is Authenticated) {
-        // Jika user mencoba akses halaman Auth, lempar ke Home
-        if (isGoingToAuth) return HomeScreen.route;
+        if (authState.role == 'admin') {
+          return AdminDashboardScreen.route;
+        } else {
+          if (isGoingToAuth || state.matchedLocation.startsWith(AdminDashboardScreen.route)) {
+            return HomeScreen.route;
+          }
+        }
       }
 
-      // SKENARIO 2: User BELUM Login
       if (authState is Unauthenticated) {
-        // Jika user mencoba akses halaman selain Auth (misal Home), lempar ke Login
         if (!isGoingToAuth) return LoginScreen.route;
       }
 
-      // Default: tidak ada redirect
       return null;
     },
   );
 }
 
-// Helper agar GoRouter bisa mendengarkan Stream dari Bloc
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     stream.asBroadcastStream().listen((_) => notifyListeners());

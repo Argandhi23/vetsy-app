@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
-import 'package:go_router/go_router.dart'; // Import GoRouter
+import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:vetsy_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:vetsy_app/features/profile/presentation/cubit/profile_cubit.dart';
-import 'package:vetsy_app/features/profile/presentation/screens/edit_profile_screen.dart'; // Import Halaman Edit
+import 'package:vetsy_app/features/profile/presentation/screens/edit_profile_screen.dart';
+import 'package:vetsy_app/features/profile/presentation/screens/change_password_screen.dart'; // IMPORT BARU
 import 'package:vetsy_app/data_seeder.dart'; 
 
 class ProfileScreen extends StatelessWidget {
@@ -17,8 +19,7 @@ class ProfileScreen extends StatelessWidget {
       backgroundColor: Colors.grey[50],
       body: BlocBuilder<ProfileCubit, ProfileState>(
         builder: (context, state) {
-          if (state.status == ProfileStatus.loading ||
-              state.status == ProfileStatus.initial) {
+          if (state.status == ProfileStatus.loading || state.status == ProfileStatus.initial) {
             return const Center(child: CircularProgressIndicator());
           }
           
@@ -28,13 +29,12 @@ class ProfileScreen extends StatelessWidget {
             return SingleChildScrollView(
               child: Column(
                 children: [
-                  // HEADER GRADIENT & AVATAR
                   Stack(
                     clipBehavior: Clip.none,
                     alignment: Alignment.center,
                     children: [
                       Container(
-                        height: 220,
+                        height: 240,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
@@ -45,82 +45,55 @@ class ProfileScreen extends StatelessWidget {
                             ],
                           ),
                           borderRadius: const BorderRadius.only(
-                            bottomLeft: Radius.circular(30),
-                            bottomRight: Radius.circular(30),
+                            bottomLeft: Radius.circular(32),
+                            bottomRight: Radius.circular(32),
                           ),
                         ),
                       ),
                       Positioned(
+                        top: 60,
+                        child: Text("Profil Saya", style: GoogleFonts.poppins(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                      ),
+                      Positioned(
                         bottom: -50,
                         child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
                           padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)]),
                           child: CircleAvatar(
-                            radius: 50,
+                            radius: 55,
                             backgroundColor: Colors.grey[200],
-                            child: Icon(
-                              Icons.person, 
-                              size: 50,
-                              color: Theme.of(context).primaryColor,
-                            ),
+                            child: Icon(Icons.person, size: 60, color: Colors.grey[400]),
                           ),
-                        ),
-                      ).animate().scale(duration: 600.ms, curve: Curves.elasticOut), 
+                        ).animate().scale(duration: 600.ms, curve: Curves.elasticOut), 
+                      ),
                     ],
                   ),
 
                   const SizedBox(height: 60), 
 
-                  // USER INFO
-                  Text(
-                    user.username,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ).animate().fadeIn().slideY(begin: 0.5),
-                  
-                  Text(
-                    user.email,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.5),
+                  Text(user.username, style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold)),
+                  Text(user.email, style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600])),
 
                   const SizedBox(height: 30),
 
-                  // MENU OPTIONS
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       children: [
                         _buildMenuTile(
                           context,
-                          icon: EvaIcons.editOutline, // Icon Edit
+                          icon: EvaIcons.editOutline, 
                           title: 'Edit Profil',
-                          onTap: () {
-                            // Navigasi ke Edit Profile
-                            context.goNamed(EditProfileScreen.routeName);
-                          },
+                          color: Colors.blue,
+                          onTap: () => context.goNamed(EditProfileScreen.routeName),
                         ),
                         const SizedBox(height: 16),
                         _buildMenuTile(
                           context,
-                          icon: EvaIcons.questionMarkCircleOutline,
-                          title: 'Bantuan & Dukungan',
-                          onTap: () {},
+                          icon: EvaIcons.shieldOutline,
+                          title: 'Ganti Password', // UPDATE LABEL
+                          color: Colors.green,
+                          onTap: () => context.goNamed(ChangePasswordScreen.routeName), // HUBUNGKAN
                         ),
                         const SizedBox(height: 16),
                         
@@ -128,25 +101,24 @@ class ProfileScreen extends StatelessWidget {
                           context,
                           icon: EvaIcons.cloudUploadOutline,
                           title: 'Isi Data Klinik (Dev Only)',
+                          color: Colors.orange,
                           onTap: () async {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Memproses data...')));
                             await seedData();
                             if(context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Data klinik berhasil ditambahkan!')),
-                              );
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('SUKSES! Cek Console.'), backgroundColor: Colors.green));
                             }
                           },
                         ),
+                        
                         const SizedBox(height: 16),
-
                         _buildMenuTile(
                           context,
                           icon: EvaIcons.logOutOutline,
                           title: 'Keluar Aplikasi',
+                          color: Colors.red,
                           isDanger: true,
-                          onTap: () {
-                            context.read<AuthCubit>().signOut();
-                          },
+                          onTap: () => context.read<AuthCubit>().signOut(),
                         ),
                       ],
                     ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
@@ -166,41 +138,28 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildMenuTile(BuildContext context,
       {required IconData icon,
       required String title,
+      required Color color,
       required VoidCallback onTap,
       bool isDanger = false}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: isDanger ? Colors.red.withOpacity(0.1) : Theme.of(context).primaryColor.withOpacity(0.1),
+            color: color.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(
-            icon,
-            color: isDanger ? Colors.red : Theme.of(context).primaryColor,
-            size: 22,
-          ),
+          child: Icon(icon, color: color, size: 22),
         ),
         title: Text(
           title,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            color: isDanger ? Colors.red : Colors.black87,
-          ),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15, color: isDanger ? Colors.red : Colors.black87),
         ),
         trailing: const Icon(EvaIcons.arrowIosForward, size: 18, color: Colors.grey),
         onTap: onTap,

@@ -7,9 +7,7 @@ import 'package:vetsy_app/features/pet/domain/usecases/delete_pet_usecase.dart';
 import 'package:vetsy_app/features/pet/domain/usecases/get_my_pets_usecase.dart';
 import 'package:vetsy_app/features/pet/domain/usecases/update_pet_usecase.dart';
 
-part 'my_pets_state.dart'; // <-- Pastikan ini ada
-
-// JANGAN TARUH 'enum' ATAU 'MyPetsState' DI SINI
+part 'my_pets_state.dart';
 
 class MyPetsCubit extends Cubit<MyPetsState> {
   final GetMyPetsUseCase getMyPetsUseCase;
@@ -25,7 +23,6 @@ class MyPetsCubit extends Cubit<MyPetsState> {
   }) : super(const MyPetsState());
 
   Future<void> fetchMyPets() async {
-    // INI FUNGSI LENGKAPNYA
     emit(state.copyWith(status: MyPetsStatus.loading));
     final result = await getMyPetsUseCase();
     result.fold(
@@ -36,14 +33,24 @@ class MyPetsCubit extends Cubit<MyPetsState> {
     );
   }
 
+  // UPDATE: Tambah parameter age & weight
   Future<void> addPet({
     required String name,
     required String type,
     required String breed,
+    required int age,      // <-- Tambah
+    required double weight, // <-- Tambah
   }) async {
-    // INI FUNGSI LENGKAPNYA
     emit(state.copyWith(status: MyPetsStatus.submitting));
-    final result = await addPetUseCase(name: name, type: type, breed: breed);
+    
+    final result = await addPetUseCase(
+      name: name, 
+      type: type, 
+      breed: breed,
+      age: age,
+      weight: weight,
+    );
+    
     await result.fold(
       (failure) async {
         emit(state.copyWith(
@@ -55,7 +62,6 @@ class MyPetsCubit extends Cubit<MyPetsState> {
   }
 
   Future<void> deletePet(String petId) async {
-    // INI FUNGSI LENGKAPNYA
     emit(state.copyWith(status: MyPetsStatus.submitting));
     final result = await deletePetUseCase(petId);
     await result.fold(
@@ -68,16 +74,28 @@ class MyPetsCubit extends Cubit<MyPetsState> {
     );
   }
 
+  // UPDATE: Tambah parameter age & weight
   Future<void> updatePet({
     required String id,
     required String name,
     required String type,
     required String breed,
+    required int age,      // <-- Tambah
+    required double weight, // <-- Tambah
   }) async {
-    // INI FUNGSI LENGKAPNYA
     emit(state.copyWith(status: MyPetsStatus.submitting));
-    final petToUpdate = PetEntity(id: id, name: name, type: type, breed: breed);
+    
+    final petToUpdate = PetEntity(
+      id: id, 
+      name: name, 
+      type: type, 
+      breed: breed,
+      age: age,         // <-- Masukkan ke Entity
+      weight: weight,   // <-- Masukkan ke Entity
+    );
+
     final result = await updatePetUseCase(petToUpdate);
+    
     await result.fold(
       (failure) async {
         emit(state.copyWith(
@@ -92,7 +110,6 @@ class MyPetsCubit extends Cubit<MyPetsState> {
     );
   }
 
-  // FUNGSI UNTUK MERESET STATE SAAT LOGOUT
   void reset() {
     emit(const MyPetsState());
   }

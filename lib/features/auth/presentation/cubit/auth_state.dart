@@ -1,4 +1,3 @@
-// lib/features/auth/presentation/cubit/auth_state.dart
 part of 'auth_cubit.dart';
 
 abstract class AuthState extends Equatable {
@@ -12,14 +11,23 @@ class AuthLoading extends AuthState {}
 
 class Authenticated extends AuthState {
   final User user;
-  const Authenticated(this.user);
+  final String role;       // 'user' atau 'admin'
+  final String? clinicId;  // ID Klinik (jika admin)
+  final String? username;  // Nama user (untuk greeting di Home)
+
+  const Authenticated({
+    required this.user,
+    this.role = 'user', 
+    this.clinicId,
+    this.username,
+  });
+
   @override
-  List<Object?> get props => [user];
+  List<Object?> get props => [user, role, clinicId, username];
 }
 
 class Unauthenticated extends AuthState {}
 
-// INI YANG HILANG (ERROR MERAH 1 & 2)
 class AuthError extends AuthState {
   final String message;
   const AuthError(this.message);

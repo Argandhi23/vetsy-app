@@ -19,7 +19,6 @@ class PetRepositoryImpl implements PetRepository {
 
   @override
   Future<Either<Failure, List<PetEntity>>> getMyPets() async {
-    // ... (Fungsi ini tetap sama)
     try {
       final user = firebaseAuth.currentUser;
       if (user == null) {
@@ -37,19 +36,25 @@ class PetRepositoryImpl implements PetRepository {
     required String name,
     required String type,
     required String breed,
+    required int age,      // <-- Tambah
+    required double weight, // <-- Tambah
   }) async {
-    // ... (Fungsi ini tetap sama)
     try {
       final user = firebaseAuth.currentUser;
       if (user == null) {
         return Left(ServerFailure(message: "User tidak terautentikasi"));
       }
+      
+      // UPDATE MAP DATA
       final Map<String, dynamic> petData = {
         'name': name,
         'type': type,
         'breed': breed,
+        'age': age,        // <-- Masukkan ke map
+        'weight': weight,  // <-- Masukkan ke map
         'createdAt': FieldValue.serverTimestamp(),
       };
+      
       await remoteDataSource.addPet(
         userId: user.uid,
         petData: petData,
@@ -62,7 +67,6 @@ class PetRepositoryImpl implements PetRepository {
 
   @override
   Future<Either<Failure, void>> deletePet(String petId) async {
-    // ... (Fungsi ini tetap sama)
     try {
       final user = firebaseAuth.currentUser;
       if (user == null) {
@@ -78,7 +82,6 @@ class PetRepositoryImpl implements PetRepository {
     }
   }
 
-  // ===== IMPLEMENTASI FUNGSI BARU =====
   @override
   Future<Either<Failure, void>> updatePet(PetEntity pet) async {
     try {
@@ -87,10 +90,13 @@ class PetRepositoryImpl implements PetRepository {
         return Left(ServerFailure(message: "User tidak terautentikasi"));
       }
 
+      // UPDATE MAP DI SINI JUGA
       final Map<String, dynamic> petData = {
         'name': pet.name,
         'type': pet.type,
         'breed': pet.breed,
+        'age': pet.age,       // <-- Ambil dari Entity
+        'weight': pet.weight, // <-- Ambil dari Entity
       };
 
       await remoteDataSource.updatePet(
@@ -104,5 +110,4 @@ class PetRepositoryImpl implements PetRepository {
       return Left(ServerFailure(message: e.message));
     }
   }
-  // ==================================
 }

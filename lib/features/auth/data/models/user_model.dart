@@ -1,4 +1,3 @@
-// lib/features/auth/data/models/user_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vetsy_app/features/auth/domain/entities/user_entity.dart';
 
@@ -7,6 +6,8 @@ class UserModel extends UserEntity {
     required super.uid,
     required super.email,
     required super.username,
+    super.role,
+    super.clinicId,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -15,6 +16,8 @@ class UserModel extends UserEntity {
       uid: doc.id,
       email: data['email'] ?? '',
       username: data['username'] ?? '',
+      role: data['role'] ?? 'user', // Baca role, default ke 'user'
+      clinicId: data['clinicId'], // Bisa null
     );
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:vetsy_app/features/pet/domain/entities/pet_entity.dart';
 import 'package:vetsy_app/features/pet/presentation/cubit/my_pets_cubit.dart';
 
@@ -14,11 +16,13 @@ class AddPetForm extends StatefulWidget {
 class _AddPetFormState extends State<AddPetForm> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _typeController = TextEditingController();
   final _breedController = TextEditingController();
-  final _ageController = TextEditingController(); // Baru
-  final _weightController = TextEditingController(); // Baru
+  final _ageController = TextEditingController();
+  final _weightController = TextEditingController();
   
+  // Ganti Text Controller dengan Choice Chip untuk Type
+  String _selectedType = 'Kucing'; 
+
   bool get _isEditing => widget.petToEdit != null;
 
   @override
@@ -26,8 +30,8 @@ class _AddPetFormState extends State<AddPetForm> {
     super.initState();
     if (_isEditing) {
       _nameController.text = widget.petToEdit!.name;
-      _typeController.text = widget.petToEdit!.type;
       _breedController.text = widget.petToEdit!.breed;
+      _selectedType = widget.petToEdit!.type;
       _ageController.text = widget.petToEdit!.age.toString();
       _weightController.text = widget.petToEdit!.weight.toString();
     }
@@ -36,7 +40,6 @@ class _AddPetFormState extends State<AddPetForm> {
   @override
   void dispose() {
     _nameController.dispose();
-    _typeController.dispose();
     _breedController.dispose();
     _ageController.dispose();
     _weightController.dispose();
@@ -45,25 +48,25 @@ class _AddPetFormState extends State<AddPetForm> {
 
   void _submit() {
     if (_formKey.currentState!.validate()) {
-      // Ambil data tambahan (jangan lupa update logic di Repository/DataSource juga nanti)
-      // Untuk kesederhanaan, logic kirim data harusnya disesuaikan dengan parameter baru
-      // Tapi karena kita belum update repository parameter, data ini mungkin tidak tersimpan 
-      // tanpa update repository. 
-      
-      // NOTE: Anda perlu update repository.addPet dan updatePet untuk menerima age & weight.
-      
+      final int age = int.tryParse(_ageController.text) ?? 0;
+      final double weight = double.tryParse(_weightController.text) ?? 0.0;
+
       if (_isEditing) {
         context.read<MyPetsCubit>().updatePet(
               id: widget.petToEdit!.id,
               name: _nameController.text,
-              type: _typeController.text,
+              type: _selectedType,
               breed: _breedController.text,
+              age: age,
+              weight: weight,
             );
       } else {
         context.read<MyPetsCubit>().addPet(
               name: _nameController.text,
-              type: _typeController.text,
+              type: _selectedType,
               breed: _breedController.text,
+              age: age,
+              weight: weight,
             );
       }
       Navigator.of(context).pop();
@@ -79,70 +82,148 @@ class _AddPetFormState extends State<AddPetForm> {
       ),
       child: Form(
         key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              _isEditing ? 'Edit Hewan' : 'Tambah Hewan',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            TextFormField(
-              controller: _nameController,
-              decoration: _inputDeco('Nama Hewan (cth: Mochi)'),
-              validator: (val) => val!.isEmpty ? 'Wajib diisi' : null,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _typeController,
-                    decoration: _inputDeco('Jenis (Kucing)'),
-                    validator: (val) => val!.isEmpty ? 'Wajib' : null,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    controller: _breedController,
-                    decoration: _inputDeco('Ras (Persia)'),
-                    validator: (val) => val!.isEmpty ? 'Wajib' : null,
-                  ),
-                ),
-              ],
-            ),
-            // KITA SIMPAN DULU LOGIC UMUR & BERAT UNTUK UPDATE BERIKUTNYA
-            // KARENA PERLU UPDATE REPOSITORY YANG CUKUP BANYAK
-            
-            const SizedBox(height: 32),
-            SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: _submit,
-                child: Text(_isEditing ? 'Simpan Perubahan' : 'Simpan Hewan'),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Handle Bar
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 24),
+
+              Text(
+                _isEditing ? 'Edit Data Hewan' : 'Tambah Hewan Baru',
+                style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 24),
-          ],
+              const SizedBox(height: 24),
+              
+              // Avatar Mockup
+              Center(
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 100, height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Icon(Icons.pets, size: 50, color: Colors.grey[400]),
+                    ),
+                    Positioned(
+                      bottom: 0, right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(color: Theme.of(context).primaryColor, shape: BoxShape.circle),
+                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Input Fields
+              TextFormField(
+                controller: _nameController,
+                decoration: _inputDeco('Nama Hewan', EvaIcons.heartOutline),
+                validator: (val) => val!.isEmpty ? 'Wajib diisi' : null,
+              ),
+              const SizedBox(height: 16),
+              
+              // Type Selector (Chips)
+              Text("Jenis Hewan", style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _buildTypeChip('Kucing'),
+                  const SizedBox(width: 12),
+                  _buildTypeChip('Anjing'),
+                  const SizedBox(width: 12),
+                  _buildTypeChip('Lainnya'),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _breedController,
+                decoration: _inputDeco('Ras (cth: Persia)', EvaIcons.pricetagsOutline),
+                validator: (val) => val!.isEmpty ? 'Wajib' : null,
+              ),
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _ageController,
+                      keyboardType: TextInputType.number,
+                      decoration: _inputDeco('Umur (Bln)', EvaIcons.calendarOutline),
+                      validator: (val) => val!.isEmpty ? 'Wajib' : null,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _weightController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: _inputDeco('Berat (Kg)', EvaIcons.barChart2Outline),
+                      validator: (val) => val!.isEmpty ? 'Wajib' : null,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 32),
+              SizedBox(
+                height: 54,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: _submit,
+                  child: Text(_isEditing ? 'Simpan Perubahan' : 'Simpan Hewan', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  InputDecoration _inputDeco(String label) {
+  Widget _buildTypeChip(String label) {
+    final isSelected = _selectedType == label;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (bool selected) {
+        setState(() {
+          _selectedType = label;
+        });
+      },
+      selectedColor: Theme.of(context).primaryColor.withOpacity(0.1),
+      backgroundColor: Colors.grey[100],
+      labelStyle: TextStyle(
+        color: isSelected ? Theme.of(context).primaryColor : Colors.black,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
+      ),
+      side: BorderSide(color: isSelected ? Theme.of(context).primaryColor : Colors.transparent),
+    );
+  }
+
+  InputDecoration _inputDeco(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      prefixIcon: Icon(icon, color: Colors.grey),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       filled: true,
-      fillColor: Colors.grey[50],
+      fillColor: Colors.grey[100],
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
     );
   }
 }

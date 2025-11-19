@@ -1,7 +1,7 @@
 // lib/features/profile/presentation/cubit/profile_state.dart
 part of 'profile_cubit.dart';
 
-enum ProfileStatus { initial, loading, loaded, error }
+enum ProfileStatus { initial, loading, loaded, error, success }
 
 class ProfileState extends Equatable {
   final ProfileStatus status;

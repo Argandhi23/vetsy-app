@@ -12,11 +12,15 @@ class AddPetUseCase {
     required String name,
     required String type,
     required String breed,
+    required int age,      // <-- Tambah
+    required double weight, // <-- Tambah
   }) async {
     return await repository.addPet(
       name: name,
       type: type,
       breed: breed,
+      age: age,         // <-- Teruskan
+      weight: weight,   // <-- Teruskan
     );
   }
 }

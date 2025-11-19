@@ -1,4 +1,3 @@
-// lib/features/auth/data/repositories/auth_repository_impl.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
@@ -33,6 +32,8 @@ class AuthRepositoryImpl implements AuthRepository {
         await firestore.collection('users').doc(user.uid).set({
           'username': username,
           'email': email,
+          'role': 'user',
+          'createdAt': FieldValue.serverTimestamp(),
         });
         return Right(user);
       } else {
@@ -58,7 +59,7 @@ class AuthRepositoryImpl implements AuthRepository {
       if (userCredential.user != null) {
         return Right(userCredential.user!);
       } else {
-         throw ServerException(message: "Gagal login");
+        throw ServerException(message: "Gagal login");
       }
     } on FirebaseAuthException catch (e) {
       return Left(ServerFailure(message: e.message ?? "Error tidak diketahui"));
@@ -97,7 +98,6 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  // IMPLEMENTASI BARU
   @override
   Future<Either<Failure, void>> updateProfile({required String username}) async {
     try {
@@ -105,7 +105,6 @@ class AuthRepositoryImpl implements AuthRepository {
       if (user == null) {
         return Left(ServerFailure(message: "User tidak terautentikasi"));
       }
-      // Update data di Firestore
       await firestore.collection('users').doc(user.uid).update({
         'username': username,
       });
@@ -116,4 +115,52 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(ServerFailure(message: e.toString()));
     }
   }
-}
+
+  // --- IMPLEMENTASI BARU ---
+
+  @override
+  Future<Either<Failure, void>> resetPassword(String email) async {
+    try {
+      await firebaseAuth.sendPasswordResetEmail(email: email);
+      return const Right(null);
+    } on FirebaseAuthException catch (e) {
+      return Left(ServerFailure(message: e.message ?? "Gagal reset password"));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updatePassword({
+    required String currentPassword, // Parameter Baru
+    required String newPassword
+  }) async {
+    try {
+      final user = firebaseAuth.currentUser;
+      if (user != null && user.email != null) {
+        // 1. BUAT KREDENSIAL DARI PASSWORD LAMA
+        final cred = EmailAuthProvider.credential(
+          email: user.email!, 
+          password: currentPassword
+        );
+
+        // 2. RE-AUTHENTICATE (CEK PASSWORD LAMA)
+        await user.reauthenticateWithCredential(cred);
+
+        // 3. JIKA SUKSES, UPDATE KE PASSWORD BARU
+        await user.updatePassword(newPassword);
+        
+        return const Right(null);
+      }
+      return Left(ServerFailure(message: "User tidak ditemukan"));
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password') {
+        return Left(ServerFailure(message: "Password lama salah."));
+      } else if (e.code == 'weak-password') {
+        return Left(ServerFailure(message: "Password baru terlalu lemah (min 6 karakter)."));
+      } else if (e.code == 'requires-recent-login') {
+        return Left(ServerFailure(message: "Sesi habis. Silakan login ulang dulu."));
+      }
+      return Left(ServerFailure(message: e.message ?? "Gagal ganti password"));
+    }
+  }
+  
+  }

@@ -1,4 +1,3 @@
-// lib/features/auth/domain/repositories/auth_repository.dart
 import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:vetsy_app/core/errors/failures.dart';
@@ -20,6 +19,13 @@ abstract class AuthRepository {
 
   Future<Either<Failure, UserEntity>> getUserProfile();
 
-  // FITUR BARU
   Future<Either<Failure, void>> updateProfile({required String username});
+
+  // --- FUNGSI BARU ---
+  Future<Either<Failure, void>> resetPassword(String email);
+  // Ubah baris updatePassword menjadi:
+  Future<Either<Failure, void>> updatePassword({
+    required String currentPassword,
+    required String newPassword,
+  });
 }
