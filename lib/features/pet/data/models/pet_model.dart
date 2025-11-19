@@ -1,4 +1,3 @@
-// lib/features/pet/data/models/pet_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vetsy_app/features/pet/domain/entities/pet_entity.dart';
 
@@ -8,9 +7,10 @@ class PetModel extends PetEntity {
     required super.name,
     required super.type,
     required super.breed,
+    super.age,
+    super.weight,
   });
 
-  // Factory constructor untuk mengubah data dari Firestore menjadi objek Model
   factory PetModel.fromFirestore(DocumentSnapshot doc) {
     Map data = doc.data() as Map<String, dynamic>;
     return PetModel(
@@ -18,6 +18,8 @@ class PetModel extends PetEntity {
       name: data['name'] ?? '',
       type: data['type'] ?? '',
       breed: data['breed'] ?? '',
+      age: data['age'] ?? 0,
+      weight: (data['weight'] ?? 0.0).toDouble(),
     );
   }
 }

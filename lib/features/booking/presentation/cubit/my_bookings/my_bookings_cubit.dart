@@ -2,17 +2,17 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
 import 'package:vetsy_app/features/booking/domain/usecases/get_my_bookings_usecase.dart';
-import 'package:vetsy_app/features/booking/domain/usecases/cancel_booking_usecase.dart'; // IMPORT BARU
+import 'package:vetsy_app/features/booking/domain/usecases/cancel_booking_usecase.dart'; // 1. IMPORT
 
 part 'my_bookings_state.dart';
 
 class MyBookingsCubit extends Cubit<MyBookingsState> {
   final GetMyBookingsUseCase getMyBookingsUseCase;
-  final CancelBookingUseCase cancelBookingUseCase; // VARIABEL BARU
+  final CancelBookingUseCase cancelBookingUseCase; // 2. TAMBAH VARIABEL
 
   MyBookingsCubit({
     required this.getMyBookingsUseCase,
-    required this.cancelBookingUseCase, // MASUKKAN DI CONSTRUCTOR
+    required this.cancelBookingUseCase, // 3. MASUKKAN KE CONSTRUCTOR
   }) : super(const MyBookingsState());
 
   Future<void> fetchMyBookings() async {
@@ -26,15 +26,18 @@ class MyBookingsCubit extends Cubit<MyBookingsState> {
     );
   }
 
-  // FUNGSI BARU: Cancel Booking
+  // 4. FUNGSI EKSEKUSI CANCEL
   Future<void> cancelBooking(String bookingId) async {
-    // Kita tidak perlu ubah status jadi loading penuh, cukup refresh setelah selesai
     final result = await cancelBookingUseCase(bookingId);
+    
     result.fold(
-      (failure) => emit(state.copyWith(
-          status: MyBookingsStatus.error, errorMessage: failure.message)),
+      (failure) {
+        // Jika gagal, tampilkan error (opsional: bisa pakai snackbar di UI)
+        emit(state.copyWith(errorMessage: failure.message));
+      },
       (_) {
-        fetchMyBookings(); // Refresh data otomatis
+        // Jika sukses, REFRESH data booking
+        fetchMyBookings();
       },
     );
   }

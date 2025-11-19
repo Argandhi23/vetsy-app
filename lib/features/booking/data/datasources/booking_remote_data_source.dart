@@ -6,7 +6,8 @@ import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
 abstract class BookingRemoteDataSource {
   Future<void> createBooking(BookingEntity booking);
   Future<List<BookingModel>> getMyBookings(String userId);
-  // BARU: Fungsi Cancel
+  
+  // 1. TAMBAHKAN INI
   Future<void> cancelBooking(String bookingId);
 }
 
@@ -31,7 +32,7 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
       final snapshot = await firestore
           .collection('bookings')
           .where('userId', isEqualTo: userId)
-          .orderBy('scheduleDate', descending: true) // Pastikan index Firestore sudah dibuat
+          .orderBy('scheduleDate', descending: true)
           .get();
 
       final bookings = snapshot.docs
@@ -44,10 +45,11 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
     }
   }
 
-  // IMPLEMENTASI BARU
+  // 2. IMPLEMENTASI FUNGSI CANCEL
   @override
   Future<void> cancelBooking(String bookingId) async {
     try {
+      // Update status booking menjadi 'Cancelled'
       await firestore.collection('bookings').doc(bookingId).update({
         'status': 'Cancelled',
       });

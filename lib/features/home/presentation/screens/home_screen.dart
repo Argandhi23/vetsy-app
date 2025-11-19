@@ -1,6 +1,6 @@
 // lib/features/home/presentation/screens/home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:vetsy_app/core/widgets/responsive_constraint_box.dart'; // <-- IMPORT
+import 'package:vetsy_app/core/widgets/responsive_constraint_box.dart';
 import 'package:vetsy_app/features/booking/presentation/screens/my_bookings_screen.dart';
 import 'package:vetsy_app/features/home/presentation/screens/clinic_list_screen.dart';
 import 'package:vetsy_app/features/pet/presentation/screens/my_pets_screen.dart';
@@ -46,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50], // PERBAIKAN: Samakan background dengan child screens
       appBar: AppBar(
         title: Text(_titles[_selectedIndex]),
         actions: const [],

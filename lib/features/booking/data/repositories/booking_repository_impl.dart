@@ -41,7 +41,7 @@ class BookingRepositoryImpl implements BookingRepository {
     }
   }
 
-  // IMPLEMENTASI BARU
+  // IMPLEMENTASI CANCEL
   @override
   Future<Either<Failure, void>> cancelBooking(String bookingId) async {
     try {
