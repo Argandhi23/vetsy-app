@@ -5,16 +5,20 @@ import 'package:lottie/lottie.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
+import 'package:go_router/go_router.dart'; // Tambahkan import GoRouter
 import 'package:vetsy_app/features/booking/presentation/cubit/my_bookings/my_bookings_cubit.dart';
+import 'package:vetsy_app/features/booking/presentation/screens/booking_detail_screen.dart'; // Tambahkan import detail screen
 
 class MyBookingsScreen extends StatelessWidget {
   const MyBookingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // PERBAIKAN: Bungkus dengan Scaffold untuk background warna Colors.grey[50]
+    // PERBAIKAN: Hapus BlocProvider lokal, langsung gunakan BlocBuilder.
+    // Ini mencegah Cubit tertutup (closed) saat ganti tab/logout.
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Samakan background dengan MyPetsScreen
+      // Pastikan background konsisten dengan halaman lain
+      backgroundColor: Colors.grey[50], 
       body: BlocBuilder<MyBookingsCubit, MyBookingsState>(
         builder: (context, state) {
           
@@ -33,7 +37,7 @@ class MyBookingsScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Fix ukuran agar tidak raksasa di Web
+                    // Fix ukuran agar tidak raksasa di Web (mirip dengan My Pets)
                     ConstrainedBox( 
                       constraints: const BoxConstraints(maxWidth: 200),
                       child: Lottie.asset(
@@ -44,13 +48,20 @@ class MyBookingsScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     const Text(
                       'Belum Ada Jadwal',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18, 
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Jadwal konsultasi atau grooming hewanmu akan muncul di sini.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey[600]),
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        height: 1.5,
+                      ),
                     ),
                   ],
                 ),
@@ -81,146 +92,157 @@ class MyBookingsScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16)
                     ),
                     margin: const EdgeInsets.only(bottom: 16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              // KOTAK TANGGAL (Fixed Size agar aman di Web)
-                              Container(
-                                width: 65, 
-                                height: 70,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).primaryColor.withOpacity(0.08),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Theme.of(context).primaryColor.withOpacity(0.2),
+                    child: InkWell( // Tambahkan InkWell agar bisa diklik ke detail
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        // Navigasi ke halaman detail tiket
+                        context.goNamed(
+                          BookingDetailScreen.routeName,
+                          extra: booking, // Kirim data booking
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                // KOTAK TANGGAL (Fixed Size agar aman di Web)
+                                Container(
+                                  width: 65, 
+                                  height: 70,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).primaryColor.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Theme.of(context).primaryColor.withOpacity(0.2),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        day,
+                                        style: TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w800,
+                                          color: Theme.of(context).primaryColor,
+                                        ),
+                                      ),
+                                      Text(
+                                        month,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context).primaryColor,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      day,
-                                      style: TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w800,
-                                        color: Theme.of(context).primaryColor,
-                                      ),
-                                    ),
-                                    Text(
-                                      month,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: Theme.of(context).primaryColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 16),
+                                const SizedBox(width: 16),
 
-                              // DETAIL TEXT
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            booking.service.name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
+                                // DETAIL TEXT
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              booking.service.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        _buildStatusChip(booking.status),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      '${booking.clinicName} • ${booking.petName}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.grey[700],
+                                          const SizedBox(width: 8),
+                                          _buildStatusChip(booking.status),
+                                        ],
                                       ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        const Icon(EvaIcons.clockOutline, size: 16, color: Colors.blueGrey),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          fullDate,
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.blueGrey,
-                                          ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        '${booking.clinicName} • ${booking.petName}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey[700],
                                         ),
-                                      ],
-                                    ),
-                                  ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          const Icon(EvaIcons.clockOutline, size: 16, color: Colors.blueGrey),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            fullDate,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.blueGrey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
 
-                          // TOMBOL BATALKAN (Hanya jika status Pending)
-                          if (booking.status == 'Pending') ...[
-                            const SizedBox(height: 12),
-                            const Divider(),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton.icon(
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text('Batalkan Booking?'),
-                                      content: const Text('Apakah Anda yakin ingin membatalkan jadwal ini?'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(ctx),
-                                          child: const Text('Tidak'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () {
-                                            context.read<MyBookingsCubit>().cancelBooking(booking.id);
-                                            Navigator.pop(ctx);
-                                          },
-                                          child: const Text(
-                                            'Ya, Batalkan',
-                                            style: TextStyle(color: Colors.red),
+                            // TOMBOL BATALKAN (Hanya jika status Pending)
+                            if (booking.status == 'Pending') ...[
+                              const SizedBox(height: 12),
+                              const Divider(),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton.icon(
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text('Batalkan Booking?'),
+                                        content: const Text('Apakah Anda yakin ingin membatalkan jadwal ini?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx),
+                                            child: const Text('Tidak', style: TextStyle(color: Colors.grey)),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(EvaIcons.closeCircleOutline, size: 16, color: Colors.red),
-                                label: const Text(
-                                  'Batalkan',
-                                  style: TextStyle(color: Colors.red, fontSize: 13),
+                                          TextButton(
+                                            onPressed: () {
+                                              // Panggil fungsi cancel
+                                              context.read<MyBookingsCubit>().cancelBooking(booking.id);
+                                              Navigator.pop(ctx);
+                                            },
+                                            child: const Text(
+                                              'Ya, Batalkan',
+                                              style: TextStyle(color: Colors.red),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(EvaIcons.closeCircleOutline, size: 16, color: Colors.red),
+                                  label: const Text(
+                                    'Batalkan',
+                                    style: TextStyle(color: Colors.red, fontSize: 13),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
                                 ),
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                              ),
-                            )
-                          ]
-                        ],
+                              )
+                            ]
+                          ],
+                        ),
                       ),
                     ),
                   )
