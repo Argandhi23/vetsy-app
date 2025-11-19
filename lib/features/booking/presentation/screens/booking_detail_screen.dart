@@ -28,7 +28,7 @@ class BookingDetailScreen extends StatelessWidget {
           icon: const Icon(EvaIcons.arrowBack, color: Colors.white),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Detail Tiket', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('Detail Booking', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -106,7 +106,7 @@ class BookingDetailScreen extends StatelessWidget {
                           ),
                           child: const Center(
                             child: Text(
-                              "||| || |||| ||| || |||| || |||",
+                              "||| || |||| ||| || ||||",
                               style: TextStyle(fontSize: 30, color: Colors.black26, fontWeight: FontWeight.w100, letterSpacing: 4),
                             ),
                           ),

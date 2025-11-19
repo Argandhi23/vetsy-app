@@ -100,7 +100,7 @@ class _HomeTabViewState extends State<HomeTabView> {
                   ),
                 ),
                 Container(
-                  margin: const EdgeInsets.only(top: 160, left: 24, right: 24),
+                  margin: const EdgeInsets.only(top: 170, left: 24, right: 24),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
