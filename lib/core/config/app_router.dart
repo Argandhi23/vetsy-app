@@ -1,14 +1,15 @@
-// lib/core/config/app_router.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vetsy_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:vetsy_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:vetsy_app/features/auth/presentation/screens/register_screen.dart';
 import 'package:vetsy_app/features/auth/presentation/screens/wrapper_screen.dart';
+import 'package:vetsy_app/features/auth/presentation/screens/onboarding_screen.dart'; // Import Baru
 import 'package:vetsy_app/features/home/presentation/screens/home_screen.dart';
 import 'package:vetsy_app/features/clinic/presentation/screens/clinic_detail_screen.dart';
 import 'package:vetsy_app/features/booking/presentation/screens/booking_screen.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/service_entity.dart';
+import 'package:vetsy_app/features/profile/presentation/screens/edit_profile_screen.dart'; // Import Baru
 
 class AppRouter {
   final AuthCubit authCubit;
@@ -19,45 +20,49 @@ class AppRouter {
     initialLocation: WrapperScreen.route,
     routes: [
       GoRoute(
-        path: WrapperScreen.route, // Rute: '/'
+        path: WrapperScreen.route,
         builder: (context, state) => const WrapperScreen(),
       ),
       GoRoute(
-        path: LoginScreen.route, // Rute: '/login'
+        path: OnboardingScreen.route, // Route Baru
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: LoginScreen.route,
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
-        path: RegisterScreen.route, // Rute: '/register'
+        path: RegisterScreen.route,
         builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
-        path: HomeScreen.route, // Rute: '/home'
+        path: HomeScreen.route,
         builder: (context, state) => HomeScreen(),
         routes: [
-          // SUB-RUTE DETAIL
+          // SUB-RUTE: EDIT PROFILE
           GoRoute(
-            name: ClinicDetailScreen.routeName, // '/home/:clinicId'
+            name: EditProfileScreen.routeName,
+            path: 'edit-profile',
+            builder: (context, state) => const EditProfileScreen(),
+          ),
+          GoRoute(
+            name: ClinicDetailScreen.routeName,
             path: ':clinicId',
             builder: (context, state) {
               final clinicId = state.pathParameters['clinicId']!;
               return ClinicDetailScreen(clinicId: clinicId);
             },
-            // SUB-RUTE BOOKING (DI DALAM DETAIL)
             routes: [
               GoRoute(
-                name: BookingScreen.routeName, // '/home/:clinicId/book'
-                path: BookingScreen.routePath, // 'book'
+                name: BookingScreen.routeName,
+                path: BookingScreen.routePath,
                 builder: (context, state) {
                   final Map<String, dynamic> data =
                       state.extra as Map<String, dynamic>;
-                  final String clinicId = data['clinicId'];
-                  final String clinicName = data['clinicName'];
-                   final ServiceEntity service = data['service'];
-
                   return BookingScreen(
-                    clinicId: clinicId,
-                    clinicName: clinicName,
-                    service: service,
+                    clinicId: data['clinicId'],
+                    clinicName: data['clinicName'],
+                    service: data['service'] as ServiceEntity,
                   );
                 },
               ),
@@ -66,34 +71,26 @@ class AppRouter {
         ],
       ),
     ],
-
-    // ===== PERBAIKI LOGIKA REDIRECT =====
     redirect: (BuildContext context, GoRouterState state) {
       final authState = authCubit.state;
       final isAtWrapper = state.matchedLocation == WrapperScreen.route;
-      
-      // JIKA KITA SUDAH DI WRAPPER, JANGAN LAKUKAN APA-APA.
-      // Biarkan WrapperScreen yang mengatur navigasinya sendiri.
-      if (isAtWrapper) {
-        return null;
-      }
+      final isAtOnboarding = state.matchedLocation == OnboardingScreen.route;
+
+      if (isAtWrapper) return null;
 
       final isGoingToAuth = state.matchedLocation.startsWith(LoginScreen.route) ||
-                            state.matchedLocation.startsWith(RegisterScreen.route);
+                            state.matchedLocation.startsWith(RegisterScreen.route) ||
+                            isAtOnboarding;
 
-      // KASUS 1: USER SUDAH LOGIN
       if (authState is Authenticated) {
-        // Jika user login & mencoba ke halaman auth, lempar ke home
         if (isGoingToAuth) return HomeScreen.route;
       }
 
-      // KASUS 2: USER BELUM LOGIN
       if (authState is Unauthenticated) {
-        // Jika user belum login & mencoba ke area terproteksi (bukan auth)
+        // Jika belum login, jangan biarkan masuk kecuali halaman auth/onboarding
         if (!isGoingToAuth) return LoginScreen.route;
       }
 
-      // (AuthInitial akan otomatis jatuh ke null, yang berarti "tetap di tempat")
       return null;
     },
   );

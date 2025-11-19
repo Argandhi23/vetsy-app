@@ -1,13 +1,13 @@
-// lib/features/auth/presentation/screens/wrapper_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
-import 'package:flutter_animate/flutter_animate.dart'; // Import Animasi
-import 'package:google_fonts/google_fonts.dart'; // Import Font (jika pakai GoogleFonts)
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart'; 
 import 'package:vetsy_app/features/auth/presentation/cubit/auth_cubit.dart';
-import 'package:vetsy_app/features/auth/presentation/screens/login_screen.dart';
+// Pastikan import OnboardingScreen sudah ada
+import 'package:vetsy_app/features/auth/presentation/screens/onboarding_screen.dart'; 
 import 'package:vetsy_app/features/home/presentation/screens/home_screen.dart';
 
 class WrapperScreen extends StatefulWidget {
@@ -26,7 +26,7 @@ class _WrapperScreenState extends State<WrapperScreen> {
   void initState() {
     super.initState();
 
-    // Timer 3 detik
+    // Timer 3 detik untuk efek Splash Screen
     Future.delayed(const Duration(seconds: 3), () {
       _timerFinished = true;
       if (mounted) {
@@ -34,7 +34,7 @@ class _WrapperScreenState extends State<WrapperScreen> {
       }
     });
 
-    // Listener Auth State
+    // Mendengarkan perubahan status Auth
     _authSubscription = context.read<AuthCubit>().stream.skip(1).listen((state) {
       if (mounted) {
         _navigate(state);
@@ -49,11 +49,13 @@ class _WrapperScreenState extends State<WrapperScreen> {
   }
 
   void _navigate(AuthState state) {
-    if (_timerFinished && (state is Authenticated || state is Unauthenticated)) {
+    // Hanya navigasi jika timer 3 detik sudah selesai
+    if (_timerFinished) {
       if (state is Authenticated) {
         context.go(HomeScreen.route);
-      } else {
-        context.go(LoginScreen.route);
+      } else if (state is Unauthenticated) {
+        // LOGIC BARU: Arahkan ke Onboarding dulu, bukan langsung Login
+        context.go(OnboardingScreen.route);
       }
     }
   }
@@ -64,27 +66,26 @@ class _WrapperScreenState extends State<WrapperScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        // 1. BACKGROUND GRADIENT MODERN
+        // 1. Background Gradient Premium
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
               Theme.of(context).primaryColor,
-              // Warna kedua sedikit lebih terang/biru muda
               Color.alphaBlend(Colors.white.withOpacity(0.2), Theme.of(context).primaryColor),
             ],
           ),
         ),
         child: Stack(
           children: [
-            // BAGIAN TENGAH (LOGO & TEKS)
+            // 2. Konten Tengah (Logo & Judul)
             Center(
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // 2. LOGO ANIMASI (Constrained agar aman di Web)
+                    // Logo Lottie (Dibatasi ukurannya agar aman di Web)
                     ConstrainedBox(
                       constraints: const BoxConstraints(
                         maxWidth: 280,
@@ -98,14 +99,14 @@ class _WrapperScreenState extends State<WrapperScreen> {
                     
                     const SizedBox(height: 10),
 
-                    // 3. JUDUL UTAMA
+                    // Judul Aplikasi dengan Font Keren
                     Text(
                       'Vetsy',
                       style: GoogleFonts.poppins(
                         fontSize: 42,
-                        fontWeight: FontWeight.w900, // Lebih tebal
+                        fontWeight: FontWeight.w900,
                         color: Colors.white,
-                        letterSpacing: 2.0, // Jarak antar huruf
+                        letterSpacing: 2.0,
                         shadows: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.1),
@@ -118,7 +119,7 @@ class _WrapperScreenState extends State<WrapperScreen> {
 
                     const SizedBox(height: 8),
 
-                    // 4. TAGLINE (PENGGANTI LOADING)
+                    // Tagline (Pengganti Loading Spinner)
                     Text(
                       'Your Pet\'s Best Friend',
                       style: GoogleFonts.poppins(
@@ -132,7 +133,7 @@ class _WrapperScreenState extends State<WrapperScreen> {
               ),
             ),
 
-            // 5. FOOTER VERSION (BIAR TERLIHAT PRO)
+            // 3. Footer Version Number
             Positioned(
               bottom: 30,
               left: 0,

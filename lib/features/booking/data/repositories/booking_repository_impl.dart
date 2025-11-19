@@ -1,4 +1,3 @@
-// lib/features/booking/data/repositories/booking_repository_impl.dart
 import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:vetsy_app/core/errors/exception.dart';
@@ -20,11 +19,8 @@ class BookingRepositoryImpl implements BookingRepository {
   @override
   Future<Either<Failure, void>> createBooking(BookingEntity booking) async {
     try {
-      // Ubah Entity (bersih) menjadi Model (siap kirim)
       final bookingModel = BookingModel.fromEntity(booking);
-
       await remoteDataSource.createBooking(bookingModel);
-
       return const Right(null);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
@@ -34,14 +30,23 @@ class BookingRepositoryImpl implements BookingRepository {
   @override
   Future<Either<Failure, List<BookingEntity>>> getMyBookings() async {
     try {
-      // Dapatkan user ID
       final user = firebaseAuth.currentUser;
       if (user == null) {
         return Left(ServerFailure(message: "User tidak terautentikasi"));
       }
-
       final bookings = await remoteDataSource.getMyBookings(user.uid);
       return Right(bookings);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    }
+  }
+
+  // IMPLEMENTASI BARU
+  @override
+  Future<Either<Failure, void>> cancelBooking(String bookingId) async {
+    try {
+      await remoteDataSource.cancelBooking(bookingId);
+      return const Right(null);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
     }

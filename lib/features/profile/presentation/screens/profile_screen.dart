@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
+import 'package:go_router/go_router.dart'; // Import GoRouter
 import 'package:vetsy_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:vetsy_app/features/profile/presentation/cubit/profile_cubit.dart';
-// Import Seeder jika Anda ingin tombol rahasia untuk isi data klinik
+import 'package:vetsy_app/features/profile/presentation/screens/edit_profile_screen.dart'; // Import Halaman Edit
 import 'package:vetsy_app/data_seeder.dart'; 
 
 class ProfileScreen extends StatelessWidget {
@@ -12,7 +13,6 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // PERBAIKAN: Provider Lokal DIHAPUS, langsung Scaffold
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: BlocBuilder<ProfileCubit, ProfileState>(
@@ -28,12 +28,11 @@ class ProfileScreen extends StatelessWidget {
             return SingleChildScrollView(
               child: Column(
                 children: [
-                  // --- HEADER GRADIENT & AVATAR ---
+                  // HEADER GRADIENT & AVATAR
                   Stack(
                     clipBehavior: Clip.none,
                     alignment: Alignment.center,
                     children: [
-                      // Background Gradient
                       Container(
                         height: 220,
                         decoration: BoxDecoration(
@@ -51,7 +50,6 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      // Avatar Profile
                       Positioned(
                         bottom: -50,
                         child: Container(
@@ -71,7 +69,7 @@ class ProfileScreen extends StatelessWidget {
                             radius: 50,
                             backgroundColor: Colors.grey[200],
                             child: Icon(
-                              Icons.person, // Pakai Icons.person standard
+                              Icons.person, 
                               size: 50,
                               color: Theme.of(context).primaryColor,
                             ),
@@ -81,9 +79,9 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
 
-                  const SizedBox(height: 60), // Space untuk avatar
+                  const SizedBox(height: 60), 
 
-                  // --- USER INFO ---
+                  // USER INFO
                   Text(
                     user.username,
                     style: const TextStyle(
@@ -103,16 +101,19 @@ class ProfileScreen extends StatelessWidget {
 
                   const SizedBox(height: 30),
 
-                  // --- MENU OPTIONS ---
+                  // MENU OPTIONS
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       children: [
                         _buildMenuTile(
                           context,
-                          icon: EvaIcons.settings2Outline,
-                          title: 'Pengaturan Akun',
-                          onTap: () {},
+                          icon: EvaIcons.editOutline, // Icon Edit
+                          title: 'Edit Profil',
+                          onTap: () {
+                            // Navigasi ke Edit Profile
+                            context.goNamed(EditProfileScreen.routeName);
+                          },
                         ),
                         const SizedBox(height: 16),
                         _buildMenuTile(
@@ -123,7 +124,6 @@ class ProfileScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         
-                        // Tombol Seed Data (Khusus Developer)
                         _buildMenuTile(
                           context,
                           icon: EvaIcons.cloudUploadOutline,

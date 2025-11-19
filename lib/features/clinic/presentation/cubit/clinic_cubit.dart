@@ -1,34 +1,48 @@
-// lib/features/clinic/presentation/cubit/clinic_cubit.dart
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/clinic_entity.dart';
-import 'package:vetsy_app/features/clinic/domain/usecases/get_clinics_usecase.dart'; // Import UseCase
+import 'package:vetsy_app/features/clinic/domain/usecases/get_clinics_usecase.dart';
 
 part 'clinic_state.dart';
 
 class ClinicCubit extends Cubit<ClinicState> {
   final GetClinicsUseCase getClinicsUseCase;
 
+  // Simpan data asli untuk keperluan pencarian lokal
+  List<ClinicEntity> _allClinics = [];
+
   ClinicCubit({required this.getClinicsUseCase}) : super(ClinicInitial());
 
-  // Fungsi yang akan dipanggil UI untuk 'menarik' data
   Future<void> fetchClinics() async {
-    // 1. Kirim state Loading
     emit(ClinicLoading());
-
-    // 2. Panggil UseCase (yang memanggil Repository)
     final result = await getClinicsUseCase();
-
-    // 3. Tangani hasilnya
     result.fold(
-      // Kiri (Gagal)
-      (failure) {
-        emit(ClinicError(message: failure.message));
-      },
-      // Kanan (Sukses)
+      (failure) => emit(ClinicError(message: failure.message)),
       (clinics) {
+        _allClinics = clinics; // Backup data asli
         emit(ClinicLoaded(clinics: clinics));
       },
     );
+  }
+
+  // FITUR BARU: Pencarian Lokal
+  void searchClinics(String query) {
+    // Hanya proses jika data sudah dimuat
+    if (state is! ClinicLoaded) return;
+
+    if (query.isEmpty) {
+      // Jika query kosong, kembalikan semua data
+      emit(ClinicLoaded(clinics: _allClinics));
+    } else {
+      // Filter berdasarkan nama klinik atau alamat
+      final filtered = _allClinics.where((clinic) {
+        final nameLower = clinic.name.toLowerCase();
+        final addressLower = clinic.address.toLowerCase();
+        final searchLower = query.toLowerCase();
+        return nameLower.contains(searchLower) || addressLower.contains(searchLower);
+      }).toList();
+      
+      emit(ClinicLoaded(clinics: filtered));
+    }
   }
 }

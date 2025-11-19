@@ -1,4 +1,3 @@
-// lib/features/booking/data/datasources/booking_remote_data_source.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vetsy_app/core/errors/exception.dart';
 import 'package:vetsy_app/features/booking/data/models/booking_model.dart';
@@ -7,6 +6,8 @@ import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
 abstract class BookingRemoteDataSource {
   Future<void> createBooking(BookingEntity booking);
   Future<List<BookingModel>> getMyBookings(String userId);
+  // BARU: Fungsi Cancel
+  Future<void> cancelBooking(String bookingId);
 }
 
 class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
@@ -30,7 +31,7 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
       final snapshot = await firestore
           .collection('bookings')
           .where('userId', isEqualTo: userId)
-          // .orderBy('scheduleDate', descending: true) <-- INI KITA HAPUS
+          .orderBy('scheduleDate', descending: true) // Pastikan index Firestore sudah dibuat
           .get();
 
       final bookings = snapshot.docs
@@ -38,6 +39,18 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
           .toList();
           
       return bookings;
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  // IMPLEMENTASI BARU
+  @override
+  Future<void> cancelBooking(String bookingId) async {
+    try {
+      await firestore.collection('bookings').doc(bookingId).update({
+        'status': 'Cancelled',
+      });
     } catch (e) {
       throw ServerException(message: e.toString());
     }
