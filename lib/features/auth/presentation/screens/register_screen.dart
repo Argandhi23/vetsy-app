@@ -70,7 +70,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
-                    ).animate().fadeIn().slideX(begin: -0.2),
+                    ).animate().fadeIn().slideY(begin: 0.3),
                     
                     const SizedBox(height: 8),
                     
@@ -80,7 +80,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         fontSize: 16,
                         color: Colors.grey[600],
                       ),
-                    ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.2),
+                    ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.3),
                     
                     const SizedBox(height: 40),
 
