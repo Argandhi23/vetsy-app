@@ -121,7 +121,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           controller: _usernameController,
                           label: 'Username',
                           icon: EvaIcons.personOutline,
-                        ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
+                        ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),
                         
                         const SizedBox(height: 20),
 
@@ -131,7 +131,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           label: 'Email',
                           icon: EvaIcons.emailOutline,
                           inputType: TextInputType.emailAddress,
-                        ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.1),
+                        ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1),
                         
                         const SizedBox(height: 20),
 
@@ -143,7 +143,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           obscureText: _isObscure,
                           isPassword: true,
                           onToggleVisibility: () => setState(() => _isObscure = !_isObscure),
-                        ).animate().fadeIn(delay: 500.ms).slideX(begin: -0.1),
+                        ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1),
                         
                         const SizedBox(height: 32),
 
@@ -237,7 +237,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.10),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),

@@ -463,6 +463,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
         title: const Text("Logout"),
         content: const Text("Apakah Anda yakin ingin keluar dari halaman admin?"),
         actions: [

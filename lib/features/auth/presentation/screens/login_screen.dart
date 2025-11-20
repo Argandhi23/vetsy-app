@@ -35,6 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
@@ -138,14 +139,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Container(width: 100, height: 100, decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: primaryColor.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10))]), child: Icon(Icons.pets, size: 50, color: primaryColor)).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
                       const SizedBox(height: 40),
-                      Text('Selamat Datang!', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)).animate().fadeIn().slideY(begin: 0.3),
+                      Text('Selamat Datang!', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)).animate().fadeIn().slideY(begin: 0.1),
                       const SizedBox(height: 8),
-                      Text('Masuk untuk mengelola kesehatan hewanmu', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[500])).animate().fadeIn(delay: 200.ms).slideY(begin: 0.3),
+                      Text('Masuk untuk mengelola kesehatan hewanmu', textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[500])).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
                       const SizedBox(height: 48),
                       
-                      _buildTextField(controller: _emailController, label: 'Email', icon: EvaIcons.emailOutline, inputType: TextInputType.emailAddress).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1),
+                      _buildTextField(controller: _emailController, label: 'Email', icon: EvaIcons.emailOutline, inputType: TextInputType.emailAddress).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),
                       const SizedBox(height: 20),
-                      _buildTextField(controller: _passwordController, label: 'Password', icon: EvaIcons.lockOutline, obscureText: _isObscure, isPassword: true, onToggleVisibility: () => setState(() => _isObscure = !_isObscure)).animate().fadeIn(delay: 400.ms).slideX(begin: -0.1),
+                      _buildTextField(controller: _passwordController, label: 'Password', icon: EvaIcons.lockOutline, obscureText: _isObscure, isPassword: true, onToggleVisibility: () => setState(() => _isObscure = !_isObscure)).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1),
                       
                       // TOMBOL LUPA PASSWORD YANG SUDAH DIPERBAIKI
                       Align(
@@ -168,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           );
                         },
-                      ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2),
+                      ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.1),
                       const SizedBox(height: 32),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -190,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildTextField({required TextEditingController controller, required String label, required IconData icon, bool obscureText = false, bool isPassword = false, TextInputType inputType = TextInputType.text, VoidCallback? onToggleVisibility}) {
     return Container(
-      decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))]),
+      decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.10), blurRadius: 10, offset: const Offset(0, 5))]),
       child: TextFormField(
         controller: controller, obscureText: obscureText, keyboardType: inputType, style: GoogleFonts.poppins(),
         decoration: InputDecoration(
