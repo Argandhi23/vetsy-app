@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart'; // <-- IMPORT PENTING
 import 'package:vetsy_app/core/config/locator.dart';
 import 'package:vetsy_app/core/widgets/responsive_constraint_box.dart';
 import 'package:vetsy_app/features/booking/presentation/screens/booking_screen.dart';
@@ -26,6 +27,23 @@ class ClinicDetailScreen extends StatelessWidget {
 
 class ClinicDetailView extends StatelessWidget {
   const ClinicDetailView({super.key});
+
+  // --- FUNGSI HELPER UNTUK LAUNCHER ---
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+    if (!await launchUrl(launchUri)) {
+      throw Exception('Could not launch $launchUri');
+    }
+  }
+
+  Future<void> _openWhatsApp(String phoneNumber) async {
+    // Format WA: https://wa.me/628xxx
+    final Uri launchUri = Uri.parse("https://wa.me/$phoneNumber");
+    // Mode launch external non-browser agar langsung buka aplikasi WA
+    if (!await launchUrl(launchUri, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not launch $launchUri');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +99,7 @@ class ClinicDetailView extends StatelessWidget {
                     ),
                   ),
 
-                  // 2. INFO KLINIK (Card Melengkung ke Atas)
+                  // 2. INFO KLINIK
                   SliverToBoxAdapter(
                     child: Container(
                       transform: Matrix4.translationValues(0, -20, 0),
@@ -133,6 +151,42 @@ class ClinicDetailView extends StatelessWidget {
                             ],
                           ),
                           
+                          const SizedBox(height: 24),
+                          
+                          // --- TOMBOL KONTAK (BARU) ---
+                          if (clinic.phone.isNotEmpty) 
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => _makePhoneCall(clinic.phone),
+                                    icon: const Icon(EvaIcons.phoneCallOutline, size: 18),
+                                    label: const Text("Telepon"),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blue[50],
+                                      foregroundColor: Colors.blue[700],
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => _openWhatsApp(clinic.phone),
+                                    icon: const Icon(EvaIcons.messageCircleOutline, size: 18),
+                                    label: const Text("WhatsApp"),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green[50],
+                                      foregroundColor: Colors.green[700],
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
                           const SizedBox(height: 32),
                           Text("Layanan Tersedia", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 16),

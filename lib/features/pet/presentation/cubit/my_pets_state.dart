@@ -1,4 +1,3 @@
-// lib/features/pet/presentation/cubit/my_pets_state.dart
 part of 'my_pets_cubit.dart';
 
 enum MyPetsStatus { initial, loading, loaded, error, submitting }

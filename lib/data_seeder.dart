@@ -10,8 +10,8 @@ final List<Map<String, dynamic>> clinics = [
     "imageUrl": "https://images.pexels.com/photos/208984/pexels-photo-208984.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
     "latitude": -7.300847,
     "longitude": 112.674367,
-    // UPDATE KATEGORI: Tambah "Vaksinasi"
-    "categories": ["Dokter", "Grooming", "Vaksinasi"], 
+    "phone": "6281234567890", // <-- TAMBAHKAN INI
+    "categories": ["Dokter", "Grooming", "Vaksinasi"],
     "services": [
       {"name": "Vaksinasi Rabies", "price": 150000},
       {"name": "Grooming Mandi Jamur", "price": 100000},
@@ -24,8 +24,8 @@ final List<Map<String, dynamic>> clinics = [
     "imageUrl": "https://images.pexels.com/photos/1805164/pexels-photo-1805164.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
     "latitude": -7.296400,
     "longitude": 112.665300,
-    // UPDATE KATEGORI: Ganti Makanan jadi Steril/Vaksin
-    "categories": ["Dokter", "Grooming", "Steril"], 
+    "phone": "6289876543210", // <-- TAMBAHKAN INI
+    "categories": ["Dokter", "Grooming", "Steril"],
     "services": [
       {"name": "Sterilisasi Kucing Jantan", "price": 350000},
       {"name": "Grooming Kutu", "price": 120000},
@@ -38,20 +38,18 @@ final List<Map<String, dynamic>> clinics = [
     "imageUrl": "https://images.pexels.com/photos/5749133/pexels-photo-5749133.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
     "latitude": -7.315000,
     "longitude": 112.695000,
-    // UPDATE KATEGORI
+    "phone": "6281122334455", // <-- TAMBAHKAN INI
     "categories": ["Pet Hotel", "Dokter", "Vaksinasi"],
     "services": [
       {"name": "Pasang Microchip", "price": 175000},
       {"name": "USG Hewan", "price": 200000},
       {"name": "Penitipan Sehat (Per Hari)", "price": 50000},
-      {"name": "Vaksin Lengkap", "price": 180000} // Tambah layanan vaksin
+      {"name": "Vaksin Lengkap", "price": 180000}
     ]
   }
 ];
 
 Future<void> seedData() async {
-  // ... (Isi fungsi seedData SAMA PERSIS seperti sebelumnya)
-  // Copy saja logic loop dan batch.commit() dari file sebelumnya
   print("=== MULAI SEEDING ===");
   final batch = db.batch();
   final clinicsCollection = db.collection("clinics");
@@ -66,7 +64,8 @@ Future<void> seedData() async {
       "imageUrl": clinicData['imageUrl'],
       "latitude": clinicData['latitude'],
       "longitude": clinicData['longitude'],
-      "categories": clinicData['categories'], 
+      "phone": clinicData['phone'], // <-- PASTIKAN INI DISIMPAN
+      "categories": clinicData['categories'],
     };
 
     batch.set(clinicRef, clinicPayload);
