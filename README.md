@@ -1,16 +1,37 @@
-# vetsy_app
+## 🐶 Vetsy App - Aplikasi Manajemen Kesehatan Hewan Peliharaan
+Aplikasi mobile untuk pemilik hewan peliharaan dalam mengelola janji temu, riwayat medis, dan profil hewan kesayangan secara digital.
 
-A new Flutter project.
+## 💡 Deskripsi Aplikasi
+Vetsy App adalah solusi digital untuk menghubungkan pemilik hewan peliharaan dengan layanan kesehatan veteriner. Aplikasi ini mempermudah pencatatan riwayat medis dan vaksinasi, serta menyediakan alur autentikasi yang aman dan antarmuka pengguna yang modern.
 
-## Getting Started
+## ✨ Fitur Utama
+Fitur-fitur yang tersedia dalam aplikasi ini meliputi:
 
-This project is a starting point for a Flutter application.
+🔐 Autentikasi Penuh: Fitur pendaftaran, masuk (login), dan atur ulang kata sandi (forgot password).
 
-A few resources to get you started if this is your first Flutter project:
+🐾 Profil Hewan: Pengelolaan detail dan riwayat beberapa hewan peliharaan.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+📅 Manajemen Data: Mendukung pencatatan riwayat medis dan vaksinasi digital.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+🎨 UI/UX Modern: Desain antarmuka yang bersih dan menggunakan animasi halus (slide in) pada transisi halaman.
+
+## 🛠️ Teknologi yang Digunakan
+Aplikasi ini dibangun menggunakan Flutter dan Dart, serta memanfaatkan paket-paket penting untuk clean architecture dan manajemen state:
+
+## 👨‍💻 Tim Pengembang
+
+Dibuat oleh:
+
+1. Faqih Rafasha Argandhi (24111814032)
+
+2. Febriana Nur Aini (24111814006)
+
+3. 
+
+4. 
+
+5. 
+
+**Dosen Pengampu:** Bonda Sisephaputra, M.Kom  
+**Mata Kuliah:** Basis Data – Semester 3  
+**Program Studi:** S1 Informatika – Universitas Negeri Surabaya (UNESA) Kampus 5
