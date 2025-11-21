@@ -323,7 +323,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
           elevation: 2,
-          shadowColor: Colors.black.withOpacity(0.05),
+          color: Colors.white,
+          shadowColor: Colors.black.withOpacity(0.10),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Column(
             children: [

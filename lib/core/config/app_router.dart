@@ -11,6 +11,7 @@ import 'package:vetsy_app/features/booking/presentation/screens/booking_screen.d
 import 'package:vetsy_app/features/clinic/domain/entities/service_entity.dart';
 import 'package:vetsy_app/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:vetsy_app/features/profile/presentation/screens/change_password_screen.dart'; // IMPORT BARU
+import 'package:vetsy_app/features/profile/presentation/screens/about_app_screen.dart';
 import 'package:vetsy_app/features/booking/presentation/screens/booking_detail_screen.dart';
 import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
 import 'package:vetsy_app/features/admin/presentation/screens/admin_dashboard_screen.dart';
@@ -60,6 +61,12 @@ class AppRouter {
             path: 'change-password',
             builder: (context, state) => const ChangePasswordScreen(),
           ),
+          GoRoute(
+            name: AboutAppScreen.routeName,
+            path: 'about-app',
+            builder: (context, state) => const AboutAppScreen(),
+          ),
+        
           GoRoute(
             name: BookingDetailScreen.routeName,
             path: 'booking-detail',

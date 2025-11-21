@@ -7,7 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:vetsy_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:vetsy_app/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:vetsy_app/features/profile/presentation/screens/edit_profile_screen.dart';
-import 'package:vetsy_app/features/profile/presentation/screens/change_password_screen.dart'; // IMPORT BARU
+import 'package:vetsy_app/features/profile/presentation/screens/about_app_screen.dart';
+import 'package:vetsy_app/features/profile/presentation/screens/change_password_screen.dart'; 
 import 'package:vetsy_app/data_seeder.dart'; 
 
 class ProfileScreen extends StatelessWidget {
@@ -94,6 +95,15 @@ class ProfileScreen extends StatelessWidget {
                           title: 'Ganti Password', // UPDATE LABEL
                           color: Colors.green,
                           onTap: () => context.goNamed(ChangePasswordScreen.routeName), // HUBUNGKAN
+                        ),
+                        const SizedBox(height: 16),
+
+                         _buildMenuTile(
+                          context,
+                          icon: EvaIcons.infoOutline,
+                          title: 'Tentang Aplikasi', 
+                          color: Colors.purple,
+                          onTap: () => context.goNamed(AboutAppScreen.routeName), // HUBUNGKAN
                         ),
                         const SizedBox(height: 16),
                         
