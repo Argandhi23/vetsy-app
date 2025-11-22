@@ -17,7 +17,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
 
-  // Data konten onboarding
   final List<Map<String, dynamic>> _contents = [
     {
       'icon': EvaIcons.searchOutline,
@@ -48,7 +47,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // 1. BACKGROUND DECORATION (Elemen Pemanis)
+          // 1. BACKGROUND DECORATION
           Positioned(
             top: -50,
             right: -50,
@@ -74,30 +73,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
 
-          // 2. TOMBOL LEWATI (SKIP)
-          Positioned(
-            top: 50,
-            right: 20,
-            child: TextButton(
-              onPressed: () => context.go(LoginScreen.route),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.grey[600],
-              ),
-              child: Text(
-                'Lewati',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
-
-          // 3. KONTEN UTAMA (PAGEVIEW)
+          // 2. KONTEN UTAMA (PAGEVIEW)
+          // [PERBAIKAN] PageView ditaruh di sini agar background di bawahnya,
+          // tapi tombol-tombol interaktif (Skip & Next) ditaruh SETELAH ini.
           PageView.builder(
             controller: _pageController,
             onPageChanged: (index) => setState(() => _currentIndex = index),
             itemCount: _contents.length,
             itemBuilder: (context, index) {
               final item = _contents[index];
-              // KITA GUNAKAN KEY UNTUK MEMICU RESTART ANIMASI SAAT SLIDE BERUBAH
               return Padding(
                 padding: const EdgeInsets.all(32.0),
                 child: Column(
@@ -105,7 +89,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   children: [
                     const Spacer(),
                     
-                    // --- GAMBAR / IKON ---
+                    // IKON
                     Container(
                       padding: const EdgeInsets.all(50),
                       decoration: BoxDecoration(
@@ -125,16 +109,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         color: item['color']
                       )
                       .animate(onPlay: (c) => c.repeat(reverse: true))
-                      .scaleXY(begin: 0.95, end: 1.05, duration: 2.seconds) // Efek Bernapas
-                      .shimmer(duration: 2.seconds, color: Colors.white.withOpacity(0.5)), // Efek Kilau
-                    )
-                    .animate()
-                    .scale(duration: 600.ms, curve: Curves.easeOutBack), // Efek Muncul Pop
+                      .scaleXY(begin: 0.95, end: 1.05, duration: 2.seconds)
+                      .shimmer(duration: 2.seconds, color: Colors.white.withOpacity(0.5)),
+                    ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
 
                     const SizedBox(height: 60),
 
-                    // --- TEXT TITLE ---
-                    // Key unik per index agar animasi restart tiap slide
+                    // JUDUL
                     Text(
                       item['title'],
                       key: ValueKey('title_$index'), 
@@ -151,7 +132,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
                     const SizedBox(height: 16),
 
-                    // --- TEXT DESCRIPTION ---
+                    // DESKRIPSI
                     Text(
                       item['desc'],
                       key: ValueKey('desc_$index'),
@@ -173,7 +154,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             },
           ),
 
-          // 4. BAGIAN BAWAH (Indikator & Tombol)
+          // 3. TOMBOL LEWATI (SKIP) -- [PINDAH KE SINI] --
+          // Ditaruh setelah PageView agar berada di lapisan atas (bisa diklik)
+          Positioned(
+            top: 50,
+            right: 20,
+            child: SafeArea( // Tambah SafeArea biar aman di HP berponi
+              child: TextButton(
+                onPressed: () {
+                  // Gunakan context.goNamed atau context.go tergantung setup router
+                  context.go(LoginScreen.route);
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.grey[600],
+                ),
+                child: Text(
+                  'Lewati',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ),
+
+          // 4. BAGIAN BAWAH (Indikator & Tombol Next)
           Positioned(
             bottom: 40,
             left: 32,
@@ -181,7 +184,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Dots Indicator yang lebih halus
+                // Dots Indicator
                 Row(
                   children: List.generate(
                     _contents.length,
@@ -192,7 +195,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         curve: Curves.easeInOut,
                         margin: const EdgeInsets.only(right: 8),
                         height: 8,
-                        // Kalau aktif, lebar 24 (lonjong). Kalau tidak, lebar 8 (bulat)
                         width: isSelected ? 24 : 8,
                         decoration: BoxDecoration(
                           color: isSelected 
@@ -205,12 +207,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
 
-                // Tombol Next / Mulai dengan Animasi Warna
+                // Tombol Next / Mulai
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    color: _contents[_currentIndex]['color'], // Warna berubah sesuai slide
+                    color: _contents[_currentIndex]['color'],
                     boxShadow: [
                       BoxShadow(
                         color: _contents[_currentIndex]['color'].withOpacity(0.4),
@@ -233,7 +235,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       } else {
                         _pageController.nextPage(
                           duration: const Duration(milliseconds: 500),
-                          curve: Curves.easeInOutCubic, // Kurva animasi slide lebih smooth
+                          curve: Curves.easeInOutCubic,
                         );
                       }
                     },

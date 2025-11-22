@@ -2,18 +2,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vetsy_app/core/errors/exception.dart';
 import 'package:vetsy_app/features/clinic/data/models/clinic_detail_model.dart';
 import 'package:vetsy_app/features/clinic/data/models/clinic_model.dart';
-import 'package:vetsy_app/features/clinic/data/models/review_model.dart'; // Pastikan buat file ini nanti
+import 'package:vetsy_app/features/clinic/data/models/review_model.dart';
+import 'package:vetsy_app/features/clinic/data/models/service_model.dart'; // Pastikan import ini
 
 abstract class ClinicRemoteDataSource {
   Future<List<ClinicModel>> getClinics();
   Future<ClinicDetailModel> getClinicDetail(String clinicId);
-  
-  // --- [BARU] ---
   Future<void> addReview({required String clinicId, required ReviewModel review});
+
+  // --- [FITUR BARU ADMIN] ---
+  Future<void> addService({required String clinicId, required ServiceModel service});
+  Future<void> updateService({required String clinicId, required ServiceModel service});
+  Future<void> deleteService({required String clinicId, required String serviceId});
 }
 
 class ClinicRemoteDataSourceImpl implements ClinicRemoteDataSource {
   final FirebaseFirestore firestore;
+
   ClinicRemoteDataSourceImpl({required this.firestore});
 
   @override
@@ -39,34 +44,71 @@ class ClinicRemoteDataSourceImpl implements ClinicRemoteDataSource {
     }
   }
 
-  // --- [BARU] Implementasi Transaksi Rating ---
   @override
   Future<void> addReview({required String clinicId, required ReviewModel review}) async {
     final clinicRef = firestore.collection('clinics').doc(clinicId);
-    final reviewRef = clinicRef.collection('reviews').doc(); // ID otomatis
+    final reviewRef = clinicRef.collection('reviews').doc(); 
 
     try {
       await firestore.runTransaction((transaction) async {
-        // 1. Baca data klinik terbaru
         final clinicSnapshot = await transaction.get(clinicRef);
         if (!clinicSnapshot.exists) throw ServerException(message: "Klinik tidak ditemukan");
 
         final currentRating = (clinicSnapshot.data()?['rating'] ?? 0.0).toDouble();
         final currentTotal = (clinicSnapshot.data()?['totalReviews'] ?? 0).toInt();
 
-        // 2. Hitung Rata-rata Baru
         final newTotal = currentTotal + 1;
         final newRating = ((currentRating * currentTotal) + review.rating) / newTotal;
 
-        // 3. Simpan Review
         transaction.set(reviewRef, review.toFirestore());
-
-        // 4. Update Data Klinik
         transaction.update(clinicRef, {
           'rating': newRating,
           'totalReviews': newTotal,
         });
       });
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  // --- [IMPLEMENTASI FITUR BARU] ---
+  
+  @override
+  Future<void> addService({required String clinicId, required ServiceModel service}) async {
+    try {
+      await firestore
+          .collection('clinics')
+          .doc(clinicId)
+          .collection('services')
+          .add(service.toFirestore());
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> updateService({required String clinicId, required ServiceModel service}) async {
+    try {
+      await firestore
+          .collection('clinics')
+          .doc(clinicId)
+          .collection('services')
+          .doc(service.id)
+          .update(service.toFirestore());
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> deleteService({required String clinicId, required String serviceId}) async {
+    try {
+      await firestore
+          .collection('clinics')
+          .doc(clinicId)
+          .collection('services')
+          .doc(serviceId)
+          .delete();
     } catch (e) {
       throw ServerException(message: e.toString());
     }

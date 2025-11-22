@@ -7,9 +7,8 @@ abstract class BookingRemoteDataSource {
   Future<void> createBooking(BookingEntity booking);
   Future<List<BookingModel>> getMyBookings(String userId);
   Future<void> cancelBooking(String bookingId);
-  
-  // --- [BARU] Cek Slot ---
-  Future<bool> isSlotAvailable({required String clinicId, required DateTime scheduleDate});
+  // [BARU] Ambil daftar jam yang sibuk
+  Future<List<DateTime>> getOccupiedSlots(String clinicId, DateTime date);
 }
 
 class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
@@ -17,29 +16,29 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
 
   BookingRemoteDataSourceImpl({required this.firestore});
 
-  // --- [BARU] Implementasi Cek Slot ---
   @override
-  Future<bool> isSlotAvailable({required String clinicId, required DateTime scheduleDate}) async {
+  Future<List<DateTime>> getOccupiedSlots(String clinicId, DateTime date) async {
     try {
-      // 1. Ubah DateTime ke Timestamp Firestore
-      final Timestamp timestamp = Timestamp.fromDate(scheduleDate);
+      // Cari booking dari jam 00:00 sampai 23:59 di hari tersebut
+      final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
+      final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
 
-      // 2. Cari booking di klinik yang sama & jam yang sama
       final snapshot = await firestore
           .collection('bookings')
           .where('clinicId', isEqualTo: clinicId)
-          .where('scheduleDate', isEqualTo: timestamp)
+          .where('scheduleDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('scheduleDate', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
           .get();
 
-      // 3. Cek apakah ada yang statusnya BUKAN 'Cancelled'
-      // Jika ada booking aktif (Confirmed/Completed/Pending), berarti slot PENUH.
-      final hasActiveBooking = snapshot.docs.any((doc) {
+      final List<DateTime> occupied = [];
+      for (var doc in snapshot.docs) {
         final data = doc.data();
-        return data['status'] != 'Cancelled';
-      });
-
-      // Return true jika TIDAK ada booking aktif (tersedia)
-      return !hasActiveBooking; 
+        // Jika statusnya bukan Cancelled, berarti slot itu TERPAKAI
+        if (data['status'] != 'Cancelled') {
+          occupied.add((data['scheduleDate'] as Timestamp).toDate());
+        }
+      }
+      return occupied;
     } catch (e) {
       throw ServerException(message: e.toString());
     }
@@ -64,11 +63,7 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
           .orderBy('scheduleDate', descending: true)
           .get();
 
-      final bookings = snapshot.docs
-          .map((doc) => BookingModel.fromFirestore(doc))
-          .toList();
-          
-      return bookings;
+      return snapshot.docs.map((doc) => BookingModel.fromFirestore(doc)).toList();
     } catch (e) {
       throw ServerException(message: e.toString());
     }
@@ -77,9 +72,7 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
   @override
   Future<void> cancelBooking(String bookingId) async {
     try {
-      await firestore.collection('bookings').doc(bookingId).update({
-        'status': 'Cancelled',
-      });
+      await firestore.collection('bookings').doc(bookingId).update({'status': 'Cancelled'});
     } catch (e) {
       throw ServerException(message: e.toString());
     }

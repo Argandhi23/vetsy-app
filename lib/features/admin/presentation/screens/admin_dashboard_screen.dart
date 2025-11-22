@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:vetsy_app/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:vetsy_app/features/admin/presentation/screens/manage_services_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   static const String route = '/admin';
@@ -28,21 +30,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
-        
-        // 1. JIKA SEDANG LOADING
         if (state is AuthLoading || state is AuthInitial) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
 
-        // 2. CEK AUTH
         String? clinicId;
         if (state is Authenticated) {
           clinicId = state.clinicId;
         }
 
-        // 3. JIKA ERROR
         if (clinicId == null) {
           return Scaffold(
             body: Center(
@@ -63,12 +59,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           );
         }
 
-        // 4. DASHBOARD
         return Scaffold(
           backgroundColor: Colors.grey[50],
           body: Column(
             children: [
-              // HEADER STATISTIK
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('bookings')
@@ -86,14 +80,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                      done = docs.where((d) => ['Completed', 'Cancelled'].contains(d['status'])).length;
                    }
 
-                   return _buildHeader(context, pending, process, done);
+                   return _buildHeader(context, pending, process, done, clinicId!);
                 },
               ),
 
-              // SEARCH BAR
               _buildSearchBar(),
 
-              // ISI KONTEN
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
@@ -166,7 +158,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   // --- WIDGETS ---
 
-  Widget _buildHeader(BuildContext context, int pending, int process, int done) {
+  Widget _buildHeader(BuildContext context, int pending, int process, int done, String clinicId) {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 50, 24, 24),
       decoration: BoxDecoration(
@@ -202,6 +194,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               )
             ],
           ),
+          
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ManageServicesScreen(clinicId: clinicId),
+                  ),
+                );
+              },
+              icon: const Icon(EvaIcons.settings2Outline, color: Colors.white),
+              label: const Text("Kelola Daftar Layanan & Harga"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.2),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+
           const SizedBox(height: 24),
           Row(
             children: [
@@ -220,13 +236,23 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildStatCard(String label, String value, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
         children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(height: 4),
-          Text(value, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
-          Text(label, style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey), textAlign: TextAlign.center),
+          Text(
+            value,
+            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+          ),
+          Text(
+            label,
+            style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -240,23 +266,27 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         controller: _searchController,
         onChanged: (val) { setState(() { _searchQuery = val; }); },
         decoration: InputDecoration(
-          hintText: 'Cari nama pasien...',
+          hintText: 'Cari nama pasien atau layanan...',
           prefixIcon: const Icon(EvaIcons.searchOutline, color: Colors.grey),
           filled: true,
           fillColor: Colors.grey[100],
           contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
           suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(icon: const Icon(EvaIcons.close, color: Colors.grey), onPressed: () { _searchController.clear(); setState(() { _searchQuery = ''; }); })
+              ? IconButton(
+                  icon: const Icon(EvaIcons.close, color: Colors.grey),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() { _searchQuery = ''; });
+                  },
+                )
               : null,
         ),
       ),
     );
   }
 
-  Widget _buildBookingList(BuildContext context, List<QueryDocumentSnapshot> docs,
-      {bool isActionable = false, bool isCompletable = false}) {
-    
+  Widget _buildBookingList(BuildContext context, List<QueryDocumentSnapshot> docs, {bool isActionable = false, bool isCompletable = false}) {
     final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
     if (docs.isEmpty) {
@@ -266,7 +296,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           children: [
             Icon(EvaIcons.folderRemoveOutline, size: 64, color: Colors.grey[300]),
             const SizedBox(height: 16),
-            Text(_searchQuery.isEmpty ? "Tidak ada data" : "Pencarian tidak ditemukan", style: GoogleFonts.poppins(color: Colors.grey)),
+            Text(
+              _searchQuery.isEmpty ? "Tidak ada data" : "Pencarian tidak ditemukan",
+              style: GoogleFonts.poppins(color: Colors.grey),
+            ),
           ],
         ),
       );
@@ -283,11 +316,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         final String dateStr = DateFormat('d MMM yyyy', 'id_ID').format(date);
         final String timeStr = DateFormat('HH:mm').format(date);
         
-        // [DATA PEMBAYARAN]
         final double grandTotal = (data['grandTotal'] ?? 0.0).toDouble();
         final String paymentMethod = data['paymentMethod'] ?? 'Tunai';
         final String paymentStatus = data['paymentStatus'] ?? 'Unpaid';
         final bool isPaid = paymentStatus == 'Paid';
+        final bool isTransfer = paymentMethod.toLowerCase().contains('transfer');
 
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
@@ -296,7 +329,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Column(
             children: [
-              // HEADER KARTU (TANGGAL & STATUS)
+              // HEADER KARTU
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
@@ -314,7 +347,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         Text("$dateStr • $timeStr", style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.blueGrey)),
                       ],
                     ),
-                    // TAMPILKAN STATUS PEMBAYARAN DI HEADER
+                    // [STATUS PEMBAYARAN YANG JELAS]
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
@@ -334,10 +367,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
                       width: 50, height: 50,
-                      decoration: BoxDecoration(color: Theme.of(context).primaryColor.withOpacity(0.1), shape: BoxShape.circle),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
                       child: Icon(Icons.pets, color: Theme.of(context).primaryColor),
                     ),
                     const SizedBox(width: 16),
@@ -345,17 +382,45 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(data['petName'] ?? 'Tanpa Nama', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                          Text(
+                            data['petName'] ?? 'Tanpa Nama',
+                            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
                           const SizedBox(height: 4),
-                          Text(data['service']['name'], style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600])),
-                          const SizedBox(height: 8),
-                          // INFO HARGA & METODE BAYAR
-                          Row(
-                            children: [
-                              Text(currency.format(grandTotal), style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.green[700])),
-                              const SizedBox(width: 8),
-                              Text("($paymentMethod)", style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
-                            ],
+                          Text(
+                            data['service']['name'],
+                            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600]),
+                          ),
+                          const SizedBox(height: 12),
+                          
+                          // [DETAIL HARGA & METODE BAYAR LEBIH JELAS]
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade200),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(currency.format(grandTotal), style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.green[700])),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      isTransfer ? Icons.account_balance : Icons.money,
+                                      size: 14,
+                                      color: Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      isTransfer ? "Transfer Bank" : "Tunai / COD",
+                                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700]),
+                                    ),
+                                  ],
+                                )
+                              ],
+                            ),
                           )
                         ],
                       ),
@@ -370,11 +435,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: Row(
                     children: [
+                      // [TAB BARU (MENUNGGU)]
                       if (isActionable) ...[
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () => _updateBookingStatus(bookingId, 'Cancelled'),
-                            style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              side: const BorderSide(color: Colors.red),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
                             child: const Text("Tolak"),
                           ),
                         ),
@@ -382,29 +452,55 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () => _updateBookingStatus(bookingId, 'Confirmed'),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              elevation: 0,
+                            ),
                             child: const Text("Terima"),
                           ),
                         ),
                       ],
+
+                      // [TAB PROSES (CONFIRMED)]
                       if (isCompletable) ...[
-                        // TOMBOL VERIFIKASI PEMBAYARAN (MANUAL)
-                        if (!isPaid)
-                          IconButton(
-                            onPressed: () => _updatePaymentStatus(bookingId, 'Paid'),
-                            icon: const Icon(Icons.payments_outlined, color: Colors.green),
-                            tooltip: "Tandai Lunas Manual",
+                        // Tombol Verifikasi Manual: Hanya muncul jika Transfer & Belum Lunas
+                        if (!isPaid && isTransfer)
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _updatePaymentStatus(bookingId, 'Paid'),
+                              icon: const Icon(Icons.check_circle_outline, size: 16),
+                              label: const Text("Verifikasi Transfer"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(vertical: 12)
+                              ),
+                            ),
                           ),
-                        const SizedBox(width: 8),
+                        
+                        if (!isPaid && isTransfer) const SizedBox(width: 8),
+
+                        // Tombol Selesaikan
                         Expanded(
+                          flex: 2,
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              // SELESAIKAN BOOKING & OTOMATIS LUNAS
-                              _updateBookingStatus(bookingId, 'Completed', autoPay: true);
+                              // Jika Tunai -> Otomatis Lunas saat Selesai
+                              // Jika Transfer -> Harus Lunas dulu (Idealnya), tapi kita buat fleksibel
+                              _updateBookingStatus(bookingId, 'Completed', autoPay: !isTransfer);
                             },
                             icon: const Icon(EvaIcons.checkmarkCircle2Outline, size: 18),
-                            label: const Text("Selesaikan"),
-                            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor, foregroundColor: Colors.white),
+                            label: Text(isTransfer ? "Selesaikan" : "Selesai & Lunas"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).primaryColor,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              elevation: 0,
+                            ),
                           ),
                         ),
                       ]
@@ -418,6 +514,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+  Widget _buildStatusBadge(String status) {
+    Color color;
+    String label;
+    switch (status) {
+      case 'Completed': color = Colors.green; label = 'Selesai'; break;
+      case 'Cancelled': color = Colors.red; label = 'Dibatalkan'; break;
+      default: color = Colors.grey; label = status;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
+    );
+  }
+
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -425,30 +539,34 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: const Text("Logout"),
         content: const Text("Keluar dari admin?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
-          TextButton(onPressed: () { Navigator.pop(ctx); context.read<AuthCubit>().signOut(); }, child: const Text("Keluar", style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Batal"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<AuthCubit>().signOut();
+            },
+            child: const Text("Keluar", style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
   }
 
-  // --- LOGIC UPDATE STATUS DI DATABASE ---
-
   Future<void> _updateBookingStatus(String id, String status, {bool autoPay = false}) async {
     Map<String, dynamic> data = {'status': status};
-    
-    // Jika admin klik "Selesaikan", otomatis anggap sudah bayar (Lunas)
     if (autoPay) {
       data['paymentStatus'] = 'Paid';
     }
-
     await FirebaseFirestore.instance.collection('bookings').doc(id).update(data);
   }
 
   Future<void> _updatePaymentStatus(String id, String paymentStatus) async {
     await FirebaseFirestore.instance.collection('bookings').doc(id).update({
-      'paymentStatus': paymentStatus
+      'paymentStatus': paymentStatus,
     });
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Status pembayaran diperbarui!")));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Status pembayaran diperbarui!"), backgroundColor: Colors.green));
   }
 }

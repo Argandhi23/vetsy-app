@@ -5,8 +5,8 @@ import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
 abstract class BookingRepository {
   Future<Either<Failure, void>> createBooking(BookingEntity booking);
   Future<Either<Failure, List<BookingEntity>>> getMyBookings();
-  
-  // TAMBAHKAN INI
   Future<Either<Failure, void>> cancelBooking(String bookingId);
-  Future<Either<Failure, bool>> checkAvailability(String clinicId, DateTime scheduleDate);
+  
+  // [UPDATE] Pakai ini untuk Grid System
+  Future<Either<Failure, List<DateTime>>> getOccupiedSlots(String clinicId, DateTime date);
 }

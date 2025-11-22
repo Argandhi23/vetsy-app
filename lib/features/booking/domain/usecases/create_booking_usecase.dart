@@ -9,26 +9,9 @@ class CreateBookingUseCase {
   CreateBookingUseCase({required this.repository});
 
   Future<Either<Failure, void>> call(BookingEntity booking) async {
-    // 1. [BARU] Cek ketersediaan slot terlebih dahulu
-    final availabilityResult = await repository.checkAvailability(
-      booking.clinicId, 
-      booking.scheduleDate
-    );
-
-    return availabilityResult.fold(
-      // Jika gagal ngecek (koneksi error dll), return Failure
-      (failure) => Left(failure), 
-      
-      // Jika berhasil ngecek, kita lihat hasilnya (true/false)
-      (isAvailable) async {
-        if (!isAvailable) {
-          // 2. Jika slot PENUH, kembalikan Error custom tanpa lanjut proses
-          return const Left(ServerFailure(message: "Jadwal penuh! Silakan pilih jam lain."));
-        }
-
-        // 3. Jika slot KOSONG (Aman), lanjutkan proses booking seperti biasa
-        return await repository.createBooking(booking);
-      },
-    );
+    // Kita langsung create booking.
+    // Pengecekan slot penuh sudah dilakukan di UI (BookingScreen -> Grid Slot),
+    // di mana user tidak bisa memilih jam yang sudah penuh.
+    return await repository.createBooking(booking);
   }
 }

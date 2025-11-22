@@ -7,8 +7,6 @@ import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:vetsy_app/core/config/locator.dart';
 import 'package:vetsy_app/features/booking/presentation/cubit/booking_cubit.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/service_entity.dart';
-import 'package:vetsy_app/features/pet/domain/entities/pet_entity.dart';
-// [PENTING] Import ini agar routeName dikenali
 import 'package:vetsy_app/features/booking/presentation/screens/booking_confirmation_screen.dart';
 
 class BookingScreen extends StatelessWidget {
@@ -66,8 +64,6 @@ class BookingView extends StatelessWidget {
           onPressed: () => context.pop(),
         ),
       ),
-      // Hapus BlocConsumer di sini karena kita tidak submit booking di halaman ini
-      // Cukup BlocBuilder untuk mengambil data pilihan user
       body: BlocBuilder<BookingCubit, BookingState>(
         builder: (context, state) {
           if (state.status == BookingPageStatus.loadingPets) {
@@ -179,7 +175,8 @@ class BookingView extends StatelessWidget {
                       },
                     );
                     if (picked != null && context.mounted) {
-                      context.read<BookingCubit>().onDateSelected(picked);
+                      // [UPDATE] Panggil fungsi onDateSelected dengan clinicId untuk cek slot
+                      context.read<BookingCubit>().onDateSelected(clinicId, picked);
                     }
                   },
                   child: Container(
@@ -211,85 +208,37 @@ class BookingView extends StatelessWidget {
                 
                 const SizedBox(height: 24),
 
-                // 4. PILIH JAM
+                // 4. PILIH JAM (GRID SYSTEM)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text("3. Pilih Jam", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
-                    if(state.selectedDate == null)
-                      Text("*Pilih tanggal dulu", style: GoogleFonts.poppins(fontSize: 12, color: Colors.red, fontStyle: FontStyle.italic)),
+                    // Tampilkan loading spinner kecil saat sedang mengecek slot
+                    if (state.status == BookingPageStatus.loadingSlots)
+                      const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                   ],
                 ),
                 const SizedBox(height: 12),
 
-                Opacity(
-                  opacity: state.selectedDate == null ? 0.5 : 1.0,
-                  child: InkWell(
-                    onTap: state.selectedDate == null 
-                        ? null 
-                        : () async {
-                            final TimeOfDay? pickedTime = await showTimePicker(
-                              context: context,
-                              initialTime: const TimeOfDay(hour: 9, minute: 0),
-                              builder: (context, child) {
-                                return Theme(
-                                  data: Theme.of(context).copyWith(
-                                    colorScheme: ColorScheme.light(
-                                      primary: Theme.of(context).primaryColor,
-                                      onSurface: Colors.black87,
-                                    ),
-                                  ),
-                                  child: child!,
-                                );
-                              },
-                            );
-                            
-                            if (pickedTime != null && context.mounted) {
-                              context.read<BookingCubit>().onTimeSelected(pickedTime);
-                            }
-                          },
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: state.selectedTime != null ? Theme.of(context).primaryColor : Colors.grey.shade200,
-                          width: state.selectedTime != null ? 1.5 : 1.0
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(EvaIcons.clockOutline, color: state.selectedTime != null ? Theme.of(context).primaryColor : Colors.grey),
-                          const SizedBox(width: 12),
-                          Text(
-                            state.selectedTime == null
-                                ? "Tentukan Jam Kunjungan"
-                                : "${state.selectedTime!.hour.toString().padLeft(2, '0')}:${state.selectedTime!.minute.toString().padLeft(2, '0')}",
-                            style: GoogleFonts.poppins(
-                              color: state.selectedTime == null ? Colors.grey : Colors.black,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            "Ubah", 
-                            style: GoogleFonts.poppins(
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12
-                            )
-                          ),
-                        ],
-                      ),
-                    ),
+                if (state.selectedDate == null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(12)),
+                    child: Text("Silakan pilih tanggal terlebih dahulu.", style: GoogleFonts.poppins(color: Colors.grey), textAlign: TextAlign.center),
+                  )
+                else
+                  // --- [GRID SLOT JAM] ---
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: _buildTimeSlots(context, state),
                   ),
-                ),
+                // -----------------------
 
                 const SizedBox(height: 40),
 
-                // TOMBOL LANJUT KE PEMBAYARAN (NAVIGASI, BUKAN SUBMIT)
+                // TOMBOL LANJUT PEMBAYARAN
                 SizedBox(
                   width: double.infinity,
                   height: 54,
@@ -301,7 +250,6 @@ class BookingView extends StatelessWidget {
                       elevation: 2,
                     ),
                     onPressed: () {
-                      // Validasi di UI
                       if (state.selectedPet == null || state.selectedDate == null || state.selectedTime == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Harap pilih Hewan, Tanggal, dan Jam terlebih dahulu.")),
@@ -309,7 +257,6 @@ class BookingView extends StatelessWidget {
                         return;
                       }
 
-                      // --- [NAVIGASI KE CHECKOUT] ---
                       context.pushNamed(
                         BookingConfirmationScreen.routeName,
                         extra: {
@@ -321,7 +268,6 @@ class BookingView extends StatelessWidget {
                           'time': state.selectedTime!,
                         },
                       );
-                      // -----------------------------
                     },
                     child: const Text("Lanjut ke Pembayaran", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
@@ -332,5 +278,61 @@ class BookingView extends StatelessWidget {
         },
       ),
     );
+  }
+
+  // --- [HELPER: BUILD GRID SLOT] ---
+  List<Widget> _buildTimeSlots(BuildContext context, BookingState state) {
+    // Jam Operasional Hardcoded (Bisa diganti dinamis nanti)
+    final List<TimeOfDay> operationalHours = [
+      const TimeOfDay(hour: 9, minute: 0),
+      const TimeOfDay(hour: 10, minute: 0),
+      const TimeOfDay(hour: 11, minute: 0),
+      const TimeOfDay(hour: 13, minute: 0), // Istirahat jam 12
+      const TimeOfDay(hour: 14, minute: 0),
+      const TimeOfDay(hour: 15, minute: 0),
+      const TimeOfDay(hour: 16, minute: 0),
+      const TimeOfDay(hour: 17, minute: 0),
+    ];
+
+    return operationalHours.map((time) {
+      // Cek apakah jam ini ada di daftar sibuk (busyTimes)
+      final isBooked = state.busyTimes.any((busy) => busy.hour == time.hour && busy.minute == time.minute);
+      final isSelected = state.selectedTime?.hour == time.hour && state.selectedTime?.minute == time.minute;
+
+      return InkWell(
+        onTap: isBooked 
+            ? null // Kalau penuh, disable klik
+            : () => context.read<BookingCubit>().onTimeSelected(time),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 80, // Ukuran kotak
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isBooked 
+                ? Colors.grey[300] // Abu-abu = Penuh
+                : isSelected 
+                    ? Theme.of(context).primaryColor // Biru = Dipilih
+                    : Colors.white, // Putih = Tersedia
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? Theme.of(context).primaryColor : Colors.grey.shade300,
+            ),
+          ),
+          child: Column(
+            children: [
+              Text(
+                "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}",
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  color: isBooked ? Colors.grey[500] : (isSelected ? Colors.white : Colors.black87),
+                ),
+              ),
+              if (isBooked)
+                Text("FULL", style: GoogleFonts.poppins(fontSize: 10, color: Colors.red[300], fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+      );
+    }).toList();
   }
 }

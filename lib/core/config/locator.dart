@@ -43,7 +43,7 @@ import 'package:vetsy_app/features/booking/presentation/cubit/my_bookings/my_boo
 // PROFILE
 import 'package:vetsy_app/features/profile/presentation/cubit/profile_cubit.dart';
 
-// [UPDATE] BANNER
+// BANNER
 import 'package:vetsy_app/features/home/presentation/cubit/banner_cubit.dart';
 
 final sl = GetIt.instance;
@@ -91,11 +91,13 @@ Future<void> setupLocator() async {
       () => PetRemoteDataSourceImpl(firestore: sl()));
 
   // BOOKING
+  // [UPDATE] Register BookingCubit dengan bookingRepository
   sl.registerFactory(() => BookingCubit(
         getMyPetsUseCase: sl(),
         createBookingUseCase: sl(),
         firebaseAuth: sl(),
         myBookingsCubit: sl(),
+        bookingRepository: sl(), // Tambahkan ini
       ));
   sl.registerLazySingleton(() => MyBookingsCubit(
     getMyBookingsUseCase: sl(),
@@ -115,6 +117,6 @@ Future<void> setupLocator() async {
     updateUserProfileUseCase: sl(),
   ));
 
-  // [UPDATE] BANNER
+  // BANNER
   sl.registerFactory(() => BannerCubit(firestore: sl()));
 }

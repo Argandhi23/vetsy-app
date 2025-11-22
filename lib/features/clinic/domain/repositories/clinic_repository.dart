@@ -3,7 +3,8 @@ import 'package:dartz/dartz.dart';
 import 'package:vetsy_app/core/errors/failures.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/clinic_detail_entity.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/clinic_entity.dart';
-import 'package:vetsy_app/features/clinic/domain/entities/review_entity.dart'; // <-- Tambahan Import
+import 'package:vetsy_app/features/clinic/domain/entities/review_entity.dart';
+import 'package:vetsy_app/features/clinic/domain/entities/service_entity.dart'; // <-- Tambahan Import
 
 abstract class ClinicRepository {
   // Kontraknya: "Beri saya daftar klinik.
@@ -17,4 +18,8 @@ abstract class ClinicRepository {
   // Future<Either<Failure, ClinicEntity>> getClinicDetail(String id);
 
   Future<Either<Failure, void>> addReview(String clinicId, ReviewEntity review);
+
+  Future<Either<Failure, void>> addService(String clinicId, ServiceEntity service);
+  Future<Either<Failure, void>> updateService(String clinicId, ServiceEntity service);
+  Future<Either<Failure, void>> deleteService(String clinicId, String serviceId);
 }

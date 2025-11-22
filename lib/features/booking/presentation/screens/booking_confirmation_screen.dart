@@ -12,7 +12,6 @@ import 'package:vetsy_app/features/pet/domain/entities/pet_entity.dart';
 class BookingConfirmationScreen extends StatefulWidget {
   static const String routeName = 'booking-confirmation';
 
-  // Data yang dikirim dari BookingScreen
   final String clinicId;
   final String clinicName;
   final ServiceEntity service;
@@ -37,11 +36,10 @@ class BookingConfirmationScreen extends StatefulWidget {
 class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   final TextEditingController _promoController = TextEditingController();
   
-  // Data Keuangan
   late double _servicePrice;
-  double _adminFee = 2000; // Biaya aplikasi
+  double _adminFee = 2000;
   double _discount = 0;
-  String _paymentMethod = "Tunai di Klinik"; // Default
+  String _paymentMethod = "Tunai di Klinik"; 
 
   @override
   void initState() {
@@ -52,7 +50,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   void _applyPromo() {
     if (_promoController.text.trim().toUpperCase() == "VETSYNEW20") {
       setState(() {
-        _discount = _servicePrice * 0.20; // Diskon 20%
+        _discount = _servicePrice * 0.20;
       });
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Kode promo berhasil digunakan!"), backgroundColor: Colors.green));
     } else {
@@ -69,8 +67,8 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
       create: (context) => sl<BookingCubit>(),
       child: BlocConsumer<BookingCubit, BookingState>(
         listener: (context, state) {
+          // [FIX 1] Handle Success
           if (state.status == BookingPageStatus.success) {
-            // Tampilkan Dialog Sukses & Kembali ke Home
             showDialog(
               context: context,
               barrierDismissible: false,
@@ -83,12 +81,12 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                     const SizedBox(height: 16),
                     Text("Booking Berhasil!", style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    Text("Silakan datang sesuai jadwal.", style: GoogleFonts.poppins(color: Colors.grey), textAlign: TextAlign.center),
+                    Text("Silakan cek status di menu Jadwal.", style: GoogleFonts.poppins(color: Colors.grey), textAlign: TextAlign.center),
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () => context.go('/home'), // Kembali ke Home
+                        onPressed: () => context.go('/home'), 
                         child: const Text("Selesai"),
                       ),
                     )
@@ -96,9 +94,19 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                 ),
               ),
             );
+          } 
+          // [FIX 2] Handle Error (Agar tidak diam saja kalau gagal)
+          else if (state.status == BookingPageStatus.error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage ?? "Terjadi kesalahan"),
+                backgroundColor: Colors.red,
+              ),
+            );
           }
         },
         builder: (context, state) {
+          // Tampilkan Loading Full Screen saat submit
           if (state.status == BookingPageStatus.submitting) {
             return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }
@@ -116,7 +124,6 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. RINGKASAN PESANAN
                   _buildSectionTitle("Rincian Layanan"),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -132,7 +139,6 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // 2. METODE PEMBAYARAN
                   _buildSectionTitle("Metode Pembayaran"),
                   Container(
                     decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
@@ -143,6 +149,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                           groupValue: _paymentMethod,
                           onChanged: (val) => setState(() => _paymentMethod = val.toString()),
                           title: Text("Tunai di Klinik", style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+                          subtitle: Text("Bayar saat tindakan selesai", style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
                           secondary: const Icon(Icons.money, color: Colors.green),
                         ),
                         const Divider(height: 1),
@@ -150,7 +157,8 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                           value: "Transfer Bank",
                           groupValue: _paymentMethod,
                           onChanged: (val) => setState(() => _paymentMethod = val.toString()),
-                          title: Text("Transfer Bank (Manual)", style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+                          title: Text("Transfer Bank", style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+                          subtitle: Text("Verifikasi manual oleh admin", style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
                           secondary: const Icon(Icons.account_balance, color: Colors.blue),
                         ),
                       ],
@@ -158,7 +166,6 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // 3. KODE PROMO
                   _buildSectionTitle("Kode Promo"),
                   Row(
                     children: [
@@ -184,7 +191,6 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // 4. RINGKASAN HARGA
                   _buildSectionTitle("Rincian Pembayaran"),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -208,24 +214,20 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                   ),
                   const SizedBox(height: 32),
 
-                  // 5. TOMBOL BAYAR
                   SizedBox(
                     width: double.infinity,
                     height: 54,
                     child: ElevatedButton(
                       onPressed: () {
-                        // PANGGIL CUBIT UNTUK SUBMIT
                         context.read<BookingCubit>().submitBooking(
                           clinicId: widget.clinicId,
                           clinicName: widget.clinicName,
                           service: widget.service,
-                          // Data Payment
                           totalPrice: _servicePrice,
                           adminFee: _adminFee,
                           discountAmount: _discount,
                           grandTotal: grandTotal,
                           paymentMethod: _paymentMethod,
-                          // Data Booking
                           selectedPet: widget.pet,
                           selectedDate: widget.date,
                           selectedTime: widget.time,
