@@ -5,17 +5,22 @@ class ClinicEntity extends Equatable {
   final String name;
   final String address;
   final String imageUrl;
-  // DATA BARU: List Kategori
-  final List<String> categories; 
+  final List<String> categories;
+  // --- [BARU] Field Rating ---
+  final double rating;
+  final int totalReviews;
 
   const ClinicEntity({
     required this.id,
     required this.name,
     required this.address,
     required this.imageUrl,
-    this.categories = const [], // Default kosong
+    this.categories = const [],
+    // Default 0 agar tidak error data lama
+    this.rating = 0.0,
+    this.totalReviews = 0,
   });
 
   @override
-  List<Object?> get props => [id, name, address, imageUrl, categories];
+  List<Object?> get props => [id, name, address, imageUrl, categories, rating, totalReviews];
 }

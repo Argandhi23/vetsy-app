@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
-import 'package:shimmer/shimmer.dart'; // Import Shimmer
+import 'package:shimmer/shimmer.dart'; 
 import 'package:vetsy_app/features/clinic/presentation/cubit/clinic_cubit.dart';
 import 'package:vetsy_app/features/clinic/presentation/screens/clinic_detail_screen.dart';
 
@@ -26,7 +26,7 @@ class _ClinicListWidgetState extends State<ClinicListWidget> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // --- 1. SEARCH BAR MODERN ---
+        // --- 1. SEARCH BAR MODERN (Tetap Sama) ---
         Container(
           margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           decoration: BoxDecoration(
@@ -43,7 +43,6 @@ class _ClinicListWidgetState extends State<ClinicListWidget> {
           child: TextField(
             controller: _searchController,
             onChanged: (value) {
-              // Panggil fungsi search di Cubit
               context.read<ClinicCubit>().searchClinics(value);
             },
             decoration: InputDecoration(
@@ -56,7 +55,7 @@ class _ClinicListWidgetState extends State<ClinicListWidget> {
                       onPressed: () {
                         _searchController.clear();
                         context.read<ClinicCubit>().searchClinics('');
-                        setState(() {}); // Refresh untuk hide tombol X
+                        setState(() {});
                       },
                     )
                   : null,
@@ -74,14 +73,14 @@ class _ClinicListWidgetState extends State<ClinicListWidget> {
               if (state is ClinicLoading || state is ClinicInitial) {
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  itemCount: 5, // Tampilkan 5 skeleton
+                  itemCount: 5, 
                   itemBuilder: (context, index) {
                     return Shimmer.fromColors(
                       baseColor: Colors.grey[300]!,
                       highlightColor: Colors.grey[100]!,
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 16),
-                        height: 120, // Tinggi kartu klinik
+                        height: 120, 
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
@@ -115,9 +114,18 @@ class _ClinicListWidgetState extends State<ClinicListWidget> {
                   itemCount: state.clinics.length,
                   itemBuilder: (context, index) {
                     final clinic = state.clinics[index];
-                    // Data dummy untuk rating & jarak agar terlihat realistis
-                    final fakeRating = (4.0 + (clinic.name.length % 10) / 10).toStringAsFixed(1);
+                    
+                    // --- [MODIFIKASI DATA] ---
+                    // Jarak masih dummy karena tidak pakai Maps API
                     final fakeDistance = ((clinic.address.length % 5) + 1.2).toStringAsFixed(1);
+                    
+                    // Rating & Review SUDAH ASLI dari Database
+                    final String ratingText = clinic.rating > 0 
+                        ? clinic.rating.toStringAsFixed(1) 
+                        : "Baru";
+                    final String reviewCountText = clinic.totalReviews > 0 
+                        ? "(${clinic.totalReviews})" 
+                        : "";
 
                     return Card(
                       elevation: 3,
@@ -166,8 +174,10 @@ class _ClinicListWidgetState extends State<ClinicListWidget> {
                                     const SizedBox(height: 12),
                                     Row(
                                       children: [
-                                        _buildTag(EvaIcons.star, fakeRating, Colors.orange[700]!),
+                                        // Menampilkan Rating Asli + Jumlah Ulasan
+                                        _buildTag(EvaIcons.star, "$ratingText $reviewCountText", Colors.orange[700]!),
                                         const SizedBox(width: 16),
+                                        // Jarak (Masih dummy)
                                         _buildTag(EvaIcons.pinOutline, '$fakeDistance km', Colors.blue[800]!),
                                       ],
                                     ),

@@ -6,7 +6,7 @@ import 'package:get_it/get_it.dart';
 import 'package:vetsy_app/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:vetsy_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:vetsy_app/features/auth/domain/usecases/get_user_profile_usecase.dart';
-import 'package:vetsy_app/features/auth/domain/usecases/update_user_profile_usecase.dart'; // IMPORT BARU
+import 'package:vetsy_app/features/auth/domain/usecases/update_user_profile_usecase.dart';
 import 'package:vetsy_app/features/auth/presentation/cubit/auth_cubit.dart';
 
 // CLINIC
@@ -17,6 +17,8 @@ import 'package:vetsy_app/features/clinic/domain/usecases/get_clinic_detail_usec
 import 'package:vetsy_app/features/clinic/domain/usecases/get_clinics_usecase.dart';
 import 'package:vetsy_app/features/clinic/presentation/cubit/clinic_cubit.dart';
 import 'package:vetsy_app/features/clinic/presentation/cubit/clinic_detail/clinic_detail_cubit.dart';
+import 'package:vetsy_app/features/clinic/domain/usecases/add_review_usecase.dart';
+import 'package:vetsy_app/features/clinic/presentation/cubit/review/review_cubit.dart';
 
 // PET
 import 'package:vetsy_app/features/pet/data/datasources/pet_remote_data_source.dart';
@@ -41,6 +43,9 @@ import 'package:vetsy_app/features/booking/presentation/cubit/my_bookings/my_boo
 // PROFILE
 import 'package:vetsy_app/features/profile/presentation/cubit/profile_cubit.dart';
 
+// [UPDATE] BANNER
+import 'package:vetsy_app/features/home/presentation/cubit/banner_cubit.dart';
+
 final sl = GetIt.instance;
 
 Future<void> setupLocator() async {
@@ -53,7 +58,7 @@ Future<void> setupLocator() async {
   sl.registerLazySingleton<AuthCubit>(
       () => AuthCubit(firebaseAuth: sl(), firestore: sl()));
   sl.registerFactory(() => GetUserProfileUseCase(repository: sl()));
-  sl.registerFactory(() => UpdateUserProfileUseCase(repository: sl())); // REGISTER USECASE BARU
+  sl.registerFactory(() => UpdateUserProfileUseCase(repository: sl()));
   sl.registerLazySingleton<AuthRepository>(
       () => AuthRepositoryImpl(firebaseAuth: sl(), firestore: sl()));
 
@@ -66,6 +71,8 @@ Future<void> setupLocator() async {
       () => ClinicRepositoryImpl(remoteDataSource: sl()));
   sl.registerLazySingleton<ClinicRemoteDataSource>(
       () => ClinicRemoteDataSourceImpl(firestore: sl()));
+  sl.registerLazySingleton(() => AddReviewUseCase(repository: sl()));
+  sl.registerFactory(() => ReviewCubit(addReviewUseCase: sl()));
 
   // PET
   sl.registerLazySingleton(() => MyPetsCubit(
@@ -105,6 +112,9 @@ Future<void> setupLocator() async {
   // PROFILE
   sl.registerLazySingleton(() => ProfileCubit(
     getUserProfileUseCase: sl(),
-    updateUserProfileUseCase: sl(), // TAMBAHKAN KE CUBIT
+    updateUserProfileUseCase: sl(),
   ));
+
+  // [UPDATE] BANNER
+  sl.registerFactory(() => BannerCubit(firestore: sl()));
 }

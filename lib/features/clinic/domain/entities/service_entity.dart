@@ -1,15 +1,14 @@
-// lib/features/clinic/domain/entities/service_entity.dart
 import 'package:equatable/equatable.dart';
 
 class ServiceEntity extends Equatable {
   final String id;
   final String name;
-  final int price;
+  final double price; // [BARU] Tambahkan field ini
 
   const ServiceEntity({
     required this.id,
     required this.name,
-    required this.price,
+    required this.price, // [BARU]
   });
 
   @override

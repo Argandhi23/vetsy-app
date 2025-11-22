@@ -37,7 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      // PERBAIKAN: extendBody dimatikan agar konten tidak tertutup nav bar
       extendBody: false, 
       
       body: ResponsiveConstraintBox(
@@ -47,7 +46,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       
-      // Navigasi tetap terlihat modern tapi aman
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -66,7 +64,8 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(0, EvaIcons.homeOutline, EvaIcons.home, "Home"),
-                _buildNavItem(1, EvaIcons.heartOutline, EvaIcons.heart, "Hewan"),
+                // [UPDATE] Ganti Icon Love jadi Pets
+                _buildNavItem(1, Icons.pets_outlined, Icons.pets, "Hewan"), 
                 _buildNavItem(2, EvaIcons.calendarOutline, EvaIcons.calendar, "Jadwal"),
                 _buildNavItem(3, EvaIcons.personOutline, EvaIcons.person, "Profil"),
               ],

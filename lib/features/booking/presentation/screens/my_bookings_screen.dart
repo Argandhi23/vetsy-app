@@ -59,6 +59,7 @@ class MyBookingsScreen extends StatelessWidget {
 
             final docs = snapshot.data?.docs ?? [];
             
+            // Filter lokal untuk tab
             final activeList = docs.where((d) => ['Pending', 'Confirmed'].contains(d['status'])).toList();
             final historyList = docs.where((d) => ['Completed', 'Cancelled'].contains(d['status'])).toList();
 
@@ -104,6 +105,7 @@ class MyBookingsScreen extends StatelessWidget {
         final String day = DateFormat('d').format(booking.scheduleDate);
         final String month = DateFormat('MMM', 'id_ID').format(booking.scheduleDate).toUpperCase();
         final String time = DateFormat('HH:mm').format(booking.scheduleDate);
+        final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
@@ -116,16 +118,16 @@ class MyBookingsScreen extends StatelessWidget {
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: () => context.goNamed(BookingDetailScreen.routeName, extra: booking),
+            onTap: () => context.pushNamed(BookingDetailScreen.routeName, extra: booking),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
-                  // KOTAK TANGGAL & JAM (Disatukan agar menonjol)
+                  // --- [KOTAK TANGGAL] ---
                   Column(
                     children: [
                       Container(
-                        width: 65,
+                        width: 60,
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
                           color: isActive ? Theme.of(context).primaryColor.withOpacity(0.1) : Colors.grey[100],
@@ -138,9 +140,8 @@ class MyBookingsScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // JAM (Ditaruh di bawah tanggal dengan blok warna beda)
                       Container(
-                        width: 65,
+                        width: 60,
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         decoration: BoxDecoration(
                           color: isActive ? Theme.of(context).primaryColor : Colors.grey,
@@ -154,9 +155,10 @@ class MyBookingsScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+                  
                   const SizedBox(width: 16),
 
-                  // INFO TENGAH
+                  // --- [INFO DETAIL] ---
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,11 +174,31 @@ class MyBookingsScreen extends StatelessWidget {
                           style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
                           maxLines: 1, overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(height: 8),
+                        
+                        // [BARU] Menampilkan Harga & Status Bayar
+                        Row(
+                          children: [
+                            Text(
+                              currency.format(booking.grandTotal),
+                              style: GoogleFonts.poppins(
+                                fontSize: 13, 
+                                fontWeight: FontWeight.bold, 
+                                color: Theme.of(context).primaryColor
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (booking.paymentStatus == 'Unpaid' && booking.status != 'Cancelled')
+                              _buildSmallTag("Belum Bayar", Colors.orange)
+                            else if (booking.paymentStatus == 'Paid')
+                              _buildSmallTag("Lunas", Colors.green)
+                          ],
+                        )
                       ],
                     ),
                   ),
 
-                  // STATUS KANAN
+                  // --- [STATUS BOOKING] ---
                   _buildStatusBadge(booking.status),
                 ],
               ),
@@ -184,6 +206,22 @@ class MyBookingsScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  // Helper untuk Tag Kecil (Lunas/Belum)
+  Widget _buildSmallTag(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withOpacity(0.3), width: 0.5)
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w600, color: color),
+      ),
     );
   }
 
@@ -197,16 +235,21 @@ class MyBookingsScreen extends StatelessWidget {
       default: color = Colors.orange; label = 'Menunggu';
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: color),
-      ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          status == 'Completed' ? EvaIcons.checkmarkCircle2 : 
+          status == 'Cancelled' ? EvaIcons.closeCircle : EvaIcons.loaderOutline,
+          color: color,
+          size: 20,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: color),
+        ),
+      ],
     );
   }
 }

@@ -16,6 +16,20 @@ class BookingRepositoryImpl implements BookingRepository {
     required this.firebaseAuth,
   });
 
+  // --- [BARU] Implementasi Cek Availability ---
+  @override
+  Future<Either<Failure, bool>> checkAvailability(String clinicId, DateTime scheduleDate) async {
+    try {
+      final result = await remoteDataSource.isSlotAvailable(
+        clinicId: clinicId, 
+        scheduleDate: scheduleDate
+      );
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message));
+    }
+  }
+
   @override
   Future<Either<Failure, void>> createBooking(BookingEntity booking) async {
     try {
@@ -41,7 +55,6 @@ class BookingRepositoryImpl implements BookingRepository {
     }
   }
 
-  // IMPLEMENTASI CANCEL
   @override
   Future<Either<Failure, void>> cancelBooking(String bookingId) async {
     try {

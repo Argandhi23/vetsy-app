@@ -7,7 +7,9 @@ class ClinicModel extends ClinicEntity {
     required super.name,
     required super.address,
     required super.imageUrl,
-    required super.categories, // <-- Tambah
+    required super.categories,
+    required super.rating,        // <-- Tambah
+    required super.totalReviews,  // <-- Tambah
   });
 
   factory ClinicModel.fromFirestore(DocumentSnapshot doc) {
@@ -18,8 +20,10 @@ class ClinicModel extends ClinicEntity {
       name: data['name'] ?? '',
       address: data['address'] ?? '',
       imageUrl: data['imageUrl'] ?? '',
-      // Konversi List dynamic ke List<String> dengan aman
       categories: List<String>.from(data['categories'] ?? []),
+      // [BARU] Ambil rating & totalReviews, default 0 jika belum ada
+      rating: (data['rating'] ?? 0.0).toDouble(),
+      totalReviews: data['totalReviews'] ?? 0,
     );
   }
 }

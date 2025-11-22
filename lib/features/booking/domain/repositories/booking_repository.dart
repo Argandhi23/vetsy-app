@@ -8,4 +8,5 @@ abstract class BookingRepository {
   
   // TAMBAHKAN INI
   Future<Either<Failure, void>> cancelBooking(String bookingId);
+  Future<Either<Failure, bool>> checkAvailability(String clinicId, DateTime scheduleDate);
 }

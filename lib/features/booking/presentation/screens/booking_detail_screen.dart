@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
+import 'package:vetsy_app/features/clinic/presentation/widgets/add_review_dialog.dart';
 
 class BookingDetailScreen extends StatelessWidget {
   static const String routeName = 'booking-detail';
@@ -36,7 +38,7 @@ class BookingDetailScreen extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 20),
-            // KARTU TIKET
+            // --- KARTU TIKET ---
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -88,7 +90,7 @@ class BookingDetailScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 32),
                         
-                        const Divider(thickness: 1, height: 30, color: Colors.grey), // Garis putus-putus simulasi
+                        const Divider(thickness: 1, height: 30, color: Colors.grey),
                         
                         _buildDetailRow("Pasien", booking.petName ?? '-'),
                         _buildDetailRow("Tanggal", fullDate),
@@ -96,7 +98,7 @@ class BookingDetailScreen extends StatelessWidget {
                         _buildDetailRow("Harga", currencyFormatter.format(booking.service.price)),
                         
                         const SizedBox(height: 24),
-                        // Barcode Palsu (Hiasan)
+                        // Barcode Palsu
                         Container(
                           height: 60,
                           width: double.infinity,
@@ -119,6 +121,42 @@ class BookingDetailScreen extends StatelessWidget {
                 ],
               ),
             ).animate().slideY(begin: 0.1, duration: 500.ms).fadeIn(),
+
+            // --- TOMBOL ULASAN (Update: Pakai BottomSheet) ---
+            if (booking.status.toLowerCase() == 'completed') ...[
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    final user = FirebaseAuth.instance.currentUser;
+                    if (user != null) {
+                      // MENGGUNAKAN SHOW MODAL BOTTOM SHEET (MODERN)
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true, // Agar bisa full height saat keyboard muncul
+                        backgroundColor: Colors.transparent, // Agar rounded corner terlihat
+                        builder: (context) => AddReviewDialog(
+                          clinicId: booking.clinicId,
+                          userId: user.uid,
+                          username: user.displayName ?? 'Pengguna Vetsy',
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(EvaIcons.star, color: Colors.white),
+                  label: const Text("Beri Ulasan", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber[700],
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 4,
+                    shadowColor: Colors.amber.withOpacity(0.4),
+                  ),
+                ),
+              ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2),
+            ],
+            // ------------------------------------------------
           ],
         ),
       ),

@@ -10,6 +10,8 @@ import 'package:vetsy_app/features/profile/presentation/screens/edit_profile_scr
 import 'package:vetsy_app/features/profile/presentation/screens/about_app_screen.dart';
 import 'package:vetsy_app/features/profile/presentation/screens/change_password_screen.dart'; 
 import 'package:vetsy_app/data_seeder.dart'; 
+// Widget Statistik
+import 'package:vetsy_app/features/profile/presentation/widgets/profile_stats_card.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -30,10 +32,12 @@ class ProfileScreen extends StatelessWidget {
             return SingleChildScrollView(
               child: Column(
                 children: [
+                  // --- 1. HEADER ---
                   Stack(
                     clipBehavior: Clip.none,
                     alignment: Alignment.center,
                     children: [
+                      // Background Gradient
                       Container(
                         height: 240,
                         decoration: BoxDecoration(
@@ -51,18 +55,32 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+                      // Judul Header
                       Positioned(
                         top: 60,
-                        child: Text("Profil Saya", style: GoogleFonts.poppins(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                        child: Text(
+                          "Profil Saya", 
+                          style: GoogleFonts.poppins(
+                            color: Colors.white, 
+                            fontSize: 20, 
+                            fontWeight: FontWeight.bold
+                          )
+                        ),
                       ),
+                      // Avatar (VERSI GRATIS / DEFAULT ICON)
                       Positioned(
                         bottom: -50,
                         child: Container(
                           padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)]),
+                          decoration: const BoxDecoration(
+                            color: Colors.white, 
+                            shape: BoxShape.circle, 
+                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)]
+                          ),
                           child: CircleAvatar(
                             radius: 55,
                             backgroundColor: Colors.grey[200],
+                            // Kita hapus logika NetworkImage di sini
                             child: Icon(Icons.person, size: 60, color: Colors.grey[400]),
                           ),
                         ).animate().scale(duration: 600.ms, curve: Curves.elasticOut), 
@@ -72,11 +90,27 @@ class ProfileScreen extends StatelessWidget {
 
                   const SizedBox(height: 60), 
 
-                  Text(user.username, style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold)),
-                  Text(user.email, style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600])),
+                  // --- 2. INFO USER ---
+                  Text(
+                    user.username, 
+                    style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold)
+                  ),
+                  Text(
+                    user.email, 
+                    style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600])
+                  ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 24),
 
+                  // --- 3. STATISTIK DASHBOARD (Fitur Baru) ---
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: ProfileStatsCard(), 
+                  ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
+
+                  const SizedBox(height: 24),
+
+                  // --- 4. MENU LIST ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
@@ -92,9 +126,9 @@ class ProfileScreen extends StatelessWidget {
                         _buildMenuTile(
                           context,
                           icon: EvaIcons.shieldOutline,
-                          title: 'Ganti Password', // UPDATE LABEL
+                          title: 'Ganti Password',
                           color: Colors.green,
-                          onTap: () => context.goNamed(ChangePasswordScreen.routeName), // HUBUNGKAN
+                          onTap: () => context.goNamed(ChangePasswordScreen.routeName),
                         ),
                         const SizedBox(height: 16),
 
@@ -103,20 +137,28 @@ class ProfileScreen extends StatelessWidget {
                           icon: EvaIcons.infoOutline,
                           title: 'Tentang Aplikasi', 
                           color: Colors.purple,
-                          onTap: () => context.goNamed(AboutAppScreen.routeName), // HUBUNGKAN
+                          onTap: () => context.goNamed(AboutAppScreen.routeName),
                         ),
                         const SizedBox(height: 16),
                         
+                        // Menu Developer (Isi Data Klinik Dummy)
                         _buildMenuTile(
                           context,
                           icon: EvaIcons.cloudUploadOutline,
                           title: 'Isi Data Klinik (Dev Only)',
                           color: Colors.orange,
                           onTap: () async {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Memproses data...')));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Memproses data...'))
+                            );
                             await seedData();
                             if(context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('SUKSES! Cek Console.'), backgroundColor: Colors.green));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('SUKSES! Cek Console.'), 
+                                  backgroundColor: Colors.green
+                                )
+                              );
                             }
                           },
                         ),
@@ -155,7 +197,9 @@ class ProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+        ],
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -169,7 +213,11 @@ class ProfileScreen extends StatelessWidget {
         ),
         title: Text(
           title,
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15, color: isDanger ? Colors.red : Colors.black87),
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600, 
+            fontSize: 15, 
+            color: isDanger ? Colors.red : Colors.black87
+          ),
         ),
         trailing: const Icon(EvaIcons.arrowIosForward, size: 18, color: Colors.grey),
         onTap: onTap,

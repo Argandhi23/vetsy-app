@@ -7,13 +7,15 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:vetsy_app/core/config/app_router.dart';
 import 'package:vetsy_app/core/config/app_theme.dart';
 import 'package:vetsy_app/core/config/locator.dart';
-// Import Cubit
+import 'firebase_options.dart';
+
+// Import Semua Cubit
 import 'package:vetsy_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:vetsy_app/features/booking/presentation/cubit/my_bookings/my_bookings_cubit.dart';
 import 'package:vetsy_app/features/pet/presentation/cubit/my_pets_cubit.dart';
 import 'package:vetsy_app/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:vetsy_app/features/clinic/presentation/cubit/clinic_cubit.dart';
-import 'firebase_options.dart';
+import 'package:vetsy_app/features/home/presentation/cubit/banner_cubit.dart'; // [PENTING] Import Banner
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,14 +40,16 @@ class _MainAppState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
-    // LOGIC FIX: Reset data saat logout, Fetch data saat login
     _authSubscription = sl<AuthCubit>().stream.listen((authState) {
       if (authState is Authenticated) {
+        // Fetch data saat login
         sl<MyPetsCubit>().fetchMyPets();
         sl<MyBookingsCubit>().fetchMyBookings();
         sl<ProfileCubit>().fetchUserProfile();
         sl<ClinicCubit>().fetchClinics();
+        // Banner tidak perlu di sini karena fetch di provider bawah
       } else if (authState is Unauthenticated) {
+        // Reset data saat logout
         sl<MyPetsCubit>().reset();
         sl<MyBookingsCubit>().reset();
         sl<ProfileCubit>().reset();
@@ -63,7 +67,6 @@ class _MainAppState extends State<MainApp> {
   Widget build(BuildContext context) {
     return Sizer(
       builder: (context, orientation, deviceType) {
-        // LOGIC FIX: MultiBlocProvider di root
         return MultiBlocProvider(
           providers: [
             BlocProvider(create: (context) => sl<AuthCubit>()),
@@ -71,6 +74,11 @@ class _MainAppState extends State<MainApp> {
             BlocProvider(create: (context) => sl<MyBookingsCubit>()),
             BlocProvider(create: (context) => sl<ProfileCubit>()),
             BlocProvider(create: (context) => sl<ClinicCubit>()),
+            
+            // --- [BAGIAN YANG KURANG TADI] ---
+            // Kita inject BannerCubit dan langsung panggil fetchBanners()
+            BlocProvider(create: (context) => sl<BannerCubit>()..fetchBanners()),
+            // ---------------------------------
           ],
           child: MaterialApp.router(
             title: 'Vetsy App',

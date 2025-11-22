@@ -10,11 +10,14 @@ import 'package:vetsy_app/features/clinic/presentation/screens/clinic_detail_scr
 import 'package:vetsy_app/features/booking/presentation/screens/booking_screen.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/service_entity.dart';
 import 'package:vetsy_app/features/profile/presentation/screens/edit_profile_screen.dart';
-import 'package:vetsy_app/features/profile/presentation/screens/change_password_screen.dart'; // IMPORT BARU
+import 'package:vetsy_app/features/profile/presentation/screens/change_password_screen.dart';
 import 'package:vetsy_app/features/profile/presentation/screens/about_app_screen.dart';
 import 'package:vetsy_app/features/booking/presentation/screens/booking_detail_screen.dart';
 import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
 import 'package:vetsy_app/features/admin/presentation/screens/admin_dashboard_screen.dart';
+// [PENTING] Import halaman baru
+import 'package:vetsy_app/features/booking/presentation/screens/booking_confirmation_screen.dart';
+import 'package:vetsy_app/features/pet/domain/entities/pet_entity.dart'; // Import PetEntity
 
 class AppRouter {
   final AuthCubit authCubit;
@@ -40,12 +43,10 @@ class AppRouter {
         path: RegisterScreen.route,
         builder: (context, state) => const RegisterScreen(),
       ),
-      
       GoRoute(
         path: AdminDashboardScreen.route,
         builder: (context, state) => const AdminDashboardScreen(),
       ),
-
       GoRoute(
         path: HomeScreen.route,
         builder: (context, state) => HomeScreen(),
@@ -55,7 +56,6 @@ class AppRouter {
             path: 'edit-profile',
             builder: (context, state) => const EditProfileScreen(),
           ),
-          // RUTE BARU
           GoRoute(
             name: ChangePasswordScreen.routeName,
             path: 'change-password',
@@ -66,7 +66,6 @@ class AppRouter {
             path: 'about-app',
             builder: (context, state) => const AboutAppScreen(),
           ),
-        
           GoRoute(
             name: BookingDetailScreen.routeName,
             path: 'booking-detail',
@@ -75,6 +74,24 @@ class AppRouter {
               return BookingDetailScreen(booking: booking);
             },
           ),
+          // --- [RUTE BARU: CHECKOUT / KONFIRMASI] ---
+          GoRoute(
+            name: BookingConfirmationScreen.routeName,
+            path: 'booking-confirmation',
+            builder: (context, state) {
+              // Ambil data yang dikirim dari BookingScreen
+              final Map<String, dynamic> args = state.extra as Map<String, dynamic>;
+              return BookingConfirmationScreen(
+                clinicId: args['clinicId'],
+                clinicName: args['clinicName'],
+                service: args['service'] as ServiceEntity,
+                pet: args['pet'] as PetEntity,
+                date: args['date'] as DateTime,
+                time: args['time'] as TimeOfDay,
+              );
+            },
+          ),
+          // ------------------------------------------
           GoRoute(
             name: ClinicDetailScreen.routeName,
             path: ':clinicId',

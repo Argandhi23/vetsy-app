@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:cached_network_image/cached_network_image.dart'; // Pastikan sudah add di pubspec
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:vetsy_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:vetsy_app/features/clinic/presentation/cubit/clinic_cubit.dart';
 import 'package:vetsy_app/features/clinic/presentation/screens/clinic_detail_screen.dart';
+// [UPDATE] Import Banner
+import 'package:vetsy_app/features/home/presentation/cubit/banner_cubit.dart';
 
 class HomeTabView extends StatefulWidget {
   const HomeTabView({super.key});
@@ -33,6 +35,8 @@ class _HomeTabViewState extends State<HomeTabView> {
         _selectedCategory = category;
       }
     });
+    // [NOTE] Pastikan ClinicCubit sudah punya fungsi filterByCategory
+    // Jika belum, logic ini hanya akan mengubah UI state tombol
     context.read<ClinicCubit>().filterByCategory(_selectedCategory);
   }
 
@@ -41,14 +45,14 @@ class _HomeTabViewState extends State<HomeTabView> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: CustomScrollView(
-        physics: const BouncingScrollPhysics(), // Efek membal saat scroll mentok (iOS style)
+        physics: const BouncingScrollPhysics(),
         slivers: [
           // 1. HEADER WAVE (GELOMBANG)
           SliverToBoxAdapter(
             child: Stack(
               children: [
                 ClipPath(
-                  clipper: WaveClipper(), // Custom Clipper di bawah
+                  clipper: WaveClipper(),
                   child: Container(
                     height: 240,
                     padding: const EdgeInsets.fromLTRB(24, 60, 24, 0),
@@ -145,41 +149,50 @@ class _HomeTabViewState extends State<HomeTabView> {
             ),
           ),
 
-          // 3. BANNER PROMO
+          // 3. [UPDATE] BANNER PROMO (DINAMIS)
           SliverToBoxAdapter(
-            child: BouncyContainer( // Efek tekan
-              onTap: () {},
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                height: 120,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: const LinearGradient(colors: [Color(0xFF101820), Color(0xFF2C3E50)]),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 15, offset: const Offset(0, 8))],
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(right: -20, bottom: -20, child: Icon(Icons.pets, size: 150, color: Colors.white.withOpacity(0.05))),
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(8)),
-                            child: Text("PROMO", style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+            child: SizedBox(
+              height: 120, // Tinggi tetap agar layout stabil
+              child: BlocBuilder<BannerCubit, BannerState>(
+                builder: (context, state) {
+                  if (state is BannerLoading) {
+                    return _buildShimmerBanner();
+                  }
+                  
+                  if (state is BannerLoaded) {
+                    if (state.banners.isEmpty) {
+                      // Fallback Tampilan Jika Kosong (Desain Bouncy Container Statis)
+                      return _buildStaticPromoBanner(); 
+                    }
+
+                    // CAROUSEL BANNER
+                    return PageView.builder(
+                      controller: PageController(viewportFraction: 0.85),
+                      itemCount: state.banners.length,
+                      itemBuilder: (context, index) {
+                        final banner = state.banners[index];
+                        return BouncyContainer(
+                          onTap: () {},
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 16), // Jarak antar slide
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              // Mengambil gambar dari URL
+                              image: DecorationImage(
+                                image: NetworkImage(banner.imageUrl),
+                                fit: BoxFit.cover,
+                              ),
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 15, offset: const Offset(0, 8))],
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          Text("Diskon Vaksin 20%", style: GoogleFonts.poppins(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                          Text("Khusus pengguna baru", style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                        );
+                      },
+                    );
+                  }
+                  
+                  // Default / Error (Tampilkan Statis)
+                  return _buildStaticPromoBanner();
+                },
               ),
             ),
           ),
@@ -235,10 +248,11 @@ class _HomeTabViewState extends State<HomeTabView> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final clinic = state.clinics[index];
-                        final fakeRating = (4.5 + (index % 5) / 10).toStringAsFixed(1);
                         final fakeDistance = ((index + 1) * 1.2).toStringAsFixed(1);
+                        
+                        // Menggunakan data rating asli jika ada, fallback ke 0.0
+                        final ratingValue = clinic.rating > 0 ? clinic.rating.toStringAsFixed(1) : "Baru";
 
-                        // Gunakan BouncyContainer untuk efek tekan
                         return BouncyContainer(
                           onTap: () => context.goNamed(ClinicDetailScreen.routeName, pathParameters: {'clinicId': clinic.id}),
                           child: Container(
@@ -251,7 +265,6 @@ class _HomeTabViewState extends State<HomeTabView> {
                             ),
                             child: Row(
                               children: [
-                                // Hero Animation + Cache Image
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
                                   child: Hero(
@@ -282,7 +295,7 @@ class _HomeTabViewState extends State<HomeTabView> {
                                         children: [
                                           Icon(Icons.star, size: 14, color: Colors.orange[700]),
                                           const SizedBox(width: 4),
-                                          Text(fakeRating, style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.orange[800])),
+                                          Text(ratingValue, style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.orange[800])),
                                           const SizedBox(width: 12),
                                           Icon(EvaIcons.navigation2Outline, size: 14, color: Theme.of(context).primaryColor),
                                           const SizedBox(width: 4),
@@ -311,9 +324,59 @@ class _HomeTabViewState extends State<HomeTabView> {
     );
   }
 
+  // [HELPER] BANNER STATIS (JIKA DB KOSONG)
+  Widget _buildStaticPromoBanner() {
+    return BouncyContainer(
+      onTap: () {},
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        height: 120,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(colors: [Color(0xFF101820), Color(0xFF2C3E50)]),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 15, offset: const Offset(0, 8))],
+        ),
+        child: Stack(
+          children: [
+            Positioned(right: -20, bottom: -20, child: Icon(Icons.pets, size: 150, color: Colors.white.withOpacity(0.05))),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(8)),
+                    child: Text("PROMO", style: GoogleFonts.poppins(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 8),
+                  Text("Diskon Vaksin 20%", style: GoogleFonts.poppins(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text("Khusus pengguna baru", style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerBanner() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Container(height: 120, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20))),
+      ),
+    );
+  }
+
   Widget _buildCategoryItem(BuildContext context, String label, IconData icon, Color color) {
     final isSelected = _selectedCategory == label;
-    return BouncyContainer( // Efek tekan
+    return BouncyContainer(
       onTap: () => _onCategoryTap(label),
       child: Column(
         children: [
@@ -346,21 +409,17 @@ class _HomeTabViewState extends State<HomeTabView> {
   }
 }
 
-// --- WIDGET TAMBAHAN: WAVE CLIPPER ---
 class WaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     var path = Path();
     path.lineTo(0, size.height - 40);
-    // Membuat kurva gelombang
     var firstControlPoint = Offset(size.width / 4, size.height);
     var firstEndPoint = Offset(size.width / 2.25, size.height - 30);
     path.quadraticBezierTo(firstControlPoint.dx, firstControlPoint.dy, firstEndPoint.dx, firstEndPoint.dy);
-
     var secondControlPoint = Offset(size.width - (size.width / 3.25), size.height - 65);
     var secondEndPoint = Offset(size.width, size.height - 40);
     path.quadraticBezierTo(secondControlPoint.dx, secondControlPoint.dy, secondEndPoint.dx, secondEndPoint.dy);
-
     path.lineTo(size.width, size.height - 40);
     path.lineTo(size.width, 0);
     path.close();
@@ -370,7 +429,6 @@ class WaveClipper extends CustomClipper<Path> {
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
-// --- WIDGET TAMBAHAN: BOUNCY CONTAINER ---
 class BouncyContainer extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;

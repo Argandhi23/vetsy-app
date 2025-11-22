@@ -8,6 +8,8 @@ import 'package:vetsy_app/core/config/locator.dart';
 import 'package:vetsy_app/features/booking/presentation/cubit/booking_cubit.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/service_entity.dart';
 import 'package:vetsy_app/features/pet/domain/entities/pet_entity.dart';
+// [PENTING] Import ini agar routeName dikenali
+import 'package:vetsy_app/features/booking/presentation/screens/booking_confirmation_screen.dart';
 
 class BookingScreen extends StatelessWidget {
   static const String routeName = 'booking';
@@ -64,43 +66,11 @@ class BookingView extends StatelessWidget {
           onPressed: () => context.pop(),
         ),
       ),
-      body: BlocConsumer<BookingCubit, BookingState>(
-        listener: (context, state) {
-          if (state.status == BookingPageStatus.success) {
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (ctx) => AlertDialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(EvaIcons.checkmarkCircle2, color: Colors.green, size: 80),
-                    const SizedBox(height: 16),
-                    Text("Booking Berhasil!", style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text("Jadwalmu sudah tercatat.", style: GoogleFonts.poppins(color: Colors.grey), textAlign: TextAlign.center),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                          context.pop();
-                        },
-                        child: const Text("Kembali"),
-                      ),
-                    )
-                  ],
-                ),
-              ),
-            );
-          } else if (state.status == BookingPageStatus.error) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.errorMessage ?? "Error")));
-          }
-        },
+      // Hapus BlocConsumer di sini karena kita tidak submit booking di halaman ini
+      // Cukup BlocBuilder untuk mengambil data pilihan user
+      body: BlocBuilder<BookingCubit, BookingState>(
         builder: (context, state) {
-          if (state.status == BookingPageStatus.loadingPets || state.status == BookingPageStatus.submitting) {
+          if (state.status == BookingPageStatus.loadingPets) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -241,7 +211,7 @@ class BookingView extends StatelessWidget {
                 
                 const SizedBox(height: 24),
 
-                // 4. PILIH JAM (FLEKSIBEL)
+                // 4. PILIH JAM
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -252,7 +222,6 @@ class BookingView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // TOMBOL JAM FLEKSIBEL
                 Opacity(
                   opacity: state.selectedDate == null ? 0.5 : 1.0,
                   child: InkWell(
@@ -320,7 +289,7 @@ class BookingView extends StatelessWidget {
 
                 const SizedBox(height: 40),
 
-                // TOMBOL KONFIRMASI
+                // TOMBOL LANJUT KE PEMBAYARAN (NAVIGASI, BUKAN SUBMIT)
                 SizedBox(
                   width: double.infinity,
                   height: 54,
@@ -332,13 +301,29 @@ class BookingView extends StatelessWidget {
                       elevation: 2,
                     ),
                     onPressed: () {
-                      context.read<BookingCubit>().submitBooking(
-                        clinicId: clinicId,
-                        clinicName: clinicName,
-                        service: service,
+                      // Validasi di UI
+                      if (state.selectedPet == null || state.selectedDate == null || state.selectedTime == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Harap pilih Hewan, Tanggal, dan Jam terlebih dahulu.")),
+                        );
+                        return;
+                      }
+
+                      // --- [NAVIGASI KE CHECKOUT] ---
+                      context.pushNamed(
+                        BookingConfirmationScreen.routeName,
+                        extra: {
+                          'clinicId': clinicId,
+                          'clinicName': clinicName,
+                          'service': service,
+                          'pet': state.selectedPet!,
+                          'date': state.selectedDate!,
+                          'time': state.selectedTime!,
+                        },
                       );
+                      // -----------------------------
                     },
-                    child: const Text("Konfirmasi Booking", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: const Text("Lanjut ke Pembayaran", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],

@@ -1,14 +1,15 @@
-// lib/features/clinic/data/datasources/clinic_remote_data_source.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vetsy_app/core/errors/exception.dart';
 import 'package:vetsy_app/features/clinic/data/models/clinic_detail_model.dart';
 import 'package:vetsy_app/features/clinic/data/models/clinic_model.dart';
+import 'package:vetsy_app/features/clinic/data/models/review_model.dart'; // Pastikan buat file ini nanti
 
 abstract class ClinicRemoteDataSource {
   Future<List<ClinicModel>> getClinics();
-
-  // INI FUNGSI BARU DARI LANGKAH 9
   Future<ClinicDetailModel> getClinicDetail(String clinicId);
+  
+  // --- [BARU] ---
+  Future<void> addReview({required String clinicId, required ReviewModel review});
 }
 
 class ClinicRemoteDataSourceImpl implements ClinicRemoteDataSource {
@@ -17,36 +18,55 @@ class ClinicRemoteDataSourceImpl implements ClinicRemoteDataSource {
 
   @override
   Future<List<ClinicModel>> getClinics() async {
-    // Ini fungsi lama (sudah benar)
     try {
       final snapshot = await firestore.collection('clinics').get();
-      final clinics = snapshot.docs
-          .map((doc) => ClinicModel.fromFirestore(doc))
-          .toList();
-      return clinics;
+      return snapshot.docs.map((doc) => ClinicModel.fromFirestore(doc)).toList();
     } catch (e) {
       throw ServerException(message: e.toString());
     }
   }
 
-  // INI IMPLEMENTASI FUNGSI BARU DARI LANGKAH 9
   @override
   Future<ClinicDetailModel> getClinicDetail(String clinicId) async {
     try {
-      // 1. Ambil dokumen klinik
-      final clinicDoc =
-          await firestore.collection('clinics').doc(clinicId).get();
+      final clinicDoc = await firestore.collection('clinics').doc(clinicId).get();
+      if (!clinicDoc.exists) throw ServerException(message: "Klinik tidak ditemukan");
 
-      if (!clinicDoc.exists) {
-        throw ServerException(message: "Klinik tidak ditemukan");
-      }
-
-      // 2. Ambil sub-koleksi 'services'
-      final serviceSnapshot =
-          await clinicDoc.reference.collection('services').get();
-
-      // 3. Gabungkan keduanya menggunakan Model
+      final serviceSnapshot = await clinicDoc.reference.collection('services').get();
       return ClinicDetailModel.fromFirestore(clinicDoc, serviceSnapshot);
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  // --- [BARU] Implementasi Transaksi Rating ---
+  @override
+  Future<void> addReview({required String clinicId, required ReviewModel review}) async {
+    final clinicRef = firestore.collection('clinics').doc(clinicId);
+    final reviewRef = clinicRef.collection('reviews').doc(); // ID otomatis
+
+    try {
+      await firestore.runTransaction((transaction) async {
+        // 1. Baca data klinik terbaru
+        final clinicSnapshot = await transaction.get(clinicRef);
+        if (!clinicSnapshot.exists) throw ServerException(message: "Klinik tidak ditemukan");
+
+        final currentRating = (clinicSnapshot.data()?['rating'] ?? 0.0).toDouble();
+        final currentTotal = (clinicSnapshot.data()?['totalReviews'] ?? 0).toInt();
+
+        // 2. Hitung Rata-rata Baru
+        final newTotal = currentTotal + 1;
+        final newRating = ((currentRating * currentTotal) + review.rating) / newTotal;
+
+        // 3. Simpan Review
+        transaction.set(reviewRef, review.toFirestore());
+
+        // 4. Update Data Klinik
+        transaction.update(clinicRef, {
+          'rating': newRating,
+          'totalReviews': newTotal,
+        });
+      });
     } catch (e) {
       throw ServerException(message: e.toString());
     }

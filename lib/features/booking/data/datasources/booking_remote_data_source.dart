@@ -6,15 +6,44 @@ import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
 abstract class BookingRemoteDataSource {
   Future<void> createBooking(BookingEntity booking);
   Future<List<BookingModel>> getMyBookings(String userId);
-  
-  // 1. TAMBAHKAN INI
   Future<void> cancelBooking(String bookingId);
+  
+  // --- [BARU] Cek Slot ---
+  Future<bool> isSlotAvailable({required String clinicId, required DateTime scheduleDate});
 }
 
 class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
   final FirebaseFirestore firestore;
 
   BookingRemoteDataSourceImpl({required this.firestore});
+
+  // --- [BARU] Implementasi Cek Slot ---
+  @override
+  Future<bool> isSlotAvailable({required String clinicId, required DateTime scheduleDate}) async {
+    try {
+      // 1. Ubah DateTime ke Timestamp Firestore
+      final Timestamp timestamp = Timestamp.fromDate(scheduleDate);
+
+      // 2. Cari booking di klinik yang sama & jam yang sama
+      final snapshot = await firestore
+          .collection('bookings')
+          .where('clinicId', isEqualTo: clinicId)
+          .where('scheduleDate', isEqualTo: timestamp)
+          .get();
+
+      // 3. Cek apakah ada yang statusnya BUKAN 'Cancelled'
+      // Jika ada booking aktif (Confirmed/Completed/Pending), berarti slot PENUH.
+      final hasActiveBooking = snapshot.docs.any((doc) {
+        final data = doc.data();
+        return data['status'] != 'Cancelled';
+      });
+
+      // Return true jika TIDAK ada booking aktif (tersedia)
+      return !hasActiveBooking; 
+    } catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
 
   @override
   Future<void> createBooking(BookingEntity booking) async {
@@ -45,11 +74,9 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
     }
   }
 
-  // 2. IMPLEMENTASI FUNGSI CANCEL
   @override
   Future<void> cancelBooking(String bookingId) async {
     try {
-      // Update status booking menjadi 'Cancelled'
       await firestore.collection('bookings').doc(bookingId).update({
         'status': 'Cancelled',
       });

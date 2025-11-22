@@ -1,4 +1,3 @@
-// lib/features/booking/data/models/booking_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/service_entity.dart';
@@ -14,9 +13,14 @@ class BookingModel extends BookingEntity {
     required super.status,
     super.clinicName,
     super.petName,
+    // [BARU]
+    required super.totalPrice,
+    required super.adminFee,
+    required super.grandTotal,
+    required super.paymentMethod,
+    required super.paymentStatus,
   });
 
-  // Factory untuk 'create' (dari Entity)
   factory BookingModel.fromEntity(BookingEntity entity) {
     return BookingModel(
       id: entity.id,
@@ -26,12 +30,17 @@ class BookingModel extends BookingEntity {
       service: entity.service,
       scheduleDate: entity.scheduleDate,
       status: entity.status,
-      clinicName: entity.clinicName, // <-- INI YANG BARU
-      petName: entity.petName, // <-- INI YANG BARU
+      clinicName: entity.clinicName,
+      petName: entity.petName,
+      // [BARU]
+      totalPrice: entity.totalPrice,
+      adminFee: entity.adminFee,
+      grandTotal: entity.grandTotal,
+      paymentMethod: entity.paymentMethod,
+      paymentStatus: entity.paymentStatus,
     );
   }
 
-  // Factory untuk 'read' (dari Firestore)
   factory BookingModel.fromFirestore(DocumentSnapshot doc) {
     Map data = doc.data() as Map<String, dynamic>;
 
@@ -39,7 +48,7 @@ class BookingModel extends BookingEntity {
     final service = ServiceEntity(
       id: serviceData['id'] ?? '',
       name: serviceData['name'] ?? '',
-      price: serviceData['price'] ?? 0,
+      price: (serviceData['price'] ?? 0).toDouble(),
     );
 
     return BookingModel(
@@ -50,12 +59,17 @@ class BookingModel extends BookingEntity {
       service: service,
       scheduleDate: (data['scheduleDate'] as Timestamp).toDate(),
       status: data['status'] ?? 'Unknown',
-      clinicName: data['clinicName'] ?? 'Klinik Tdk Ditemukan', // <-- INI YANG BARU
-      petName: data['petName'] ?? 'Hewan Tdk Ditemukan', // <-- INI YANG BARU
+      clinicName: data['clinicName'] ?? 'Klinik Tdk Ditemukan',
+      petName: data['petName'] ?? 'Hewan Tdk Ditemukan',
+      // [BARU] Ambil data payment (pakai ?? 0.0 biar ga error null)
+      totalPrice: (data['totalPrice'] ?? 0.0).toDouble(),
+      adminFee: (data['adminFee'] ?? 0.0).toDouble(),
+      grandTotal: (data['grandTotal'] ?? 0.0).toDouble(),
+      paymentMethod: data['paymentMethod'] ?? 'Tunai',
+      paymentStatus: data['paymentStatus'] ?? 'Unpaid',
     );
   }
 
-  // Mengubah objek ini menjadi Map untuk dikirim ke Firestore
   Map<String, dynamic> toFirestore() {
     return {
       'userId': userId,
@@ -69,8 +83,14 @@ class BookingModel extends BookingEntity {
       'scheduleDate': Timestamp.fromDate(scheduleDate),
       'status': status,
       'createdAt': FieldValue.serverTimestamp(),
-      'clinicName': clinicName, // <-- INI YANG BARU
-      'petName': petName, // <-- INI YANG BARU
+      'clinicName': clinicName,
+      'petName': petName,
+      // [BARU] Simpan ke DB
+      'totalPrice': totalPrice,
+      'adminFee': adminFee,
+      'grandTotal': grandTotal,
+      'paymentMethod': paymentMethod,
+      'paymentStatus': paymentStatus,
     };
   }
 }

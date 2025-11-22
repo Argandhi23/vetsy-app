@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import 'package:vetsy_app/core/errors/failures.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/clinic_detail_entity.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/clinic_entity.dart';
+import 'package:vetsy_app/features/clinic/domain/entities/review_entity.dart'; // <-- Tambahan Import
 
 abstract class ClinicRepository {
   // Kontraknya: "Beri saya daftar klinik.
@@ -14,4 +15,6 @@ abstract class ClinicRepository {
   
   // Nanti kita bisa tambah:
   // Future<Either<Failure, ClinicEntity>> getClinicDetail(String id);
+
+  Future<Either<Failure, void>> addReview(String clinicId, ReviewEntity review);
 }

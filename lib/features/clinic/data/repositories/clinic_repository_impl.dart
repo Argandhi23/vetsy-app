@@ -1,10 +1,11 @@
-// lib/features/clinic/data/repositories/clinic_repository_impl.dart
 import 'package:dartz/dartz.dart';
-import 'package:vetsy_app/core/errors/exception.dart'; // Pastikan 'exceptions.dart' (dengan 's')
+import 'package:vetsy_app/core/errors/exception.dart';
 import 'package:vetsy_app/core/errors/failures.dart';
 import 'package:vetsy_app/features/clinic/data/datasources/clinic_remote_data_source.dart';
+import 'package:vetsy_app/features/clinic/data/models/review_model.dart'; // Import Model
 import 'package:vetsy_app/features/clinic/domain/entities/clinic_detail_entity.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/clinic_entity.dart';
+import 'package:vetsy_app/features/clinic/domain/entities/review_entity.dart'; // Import Entity
 import 'package:vetsy_app/features/clinic/domain/repositories/clinic_repository.dart';
 
 class ClinicRepositoryImpl implements ClinicRepository {
@@ -13,27 +14,41 @@ class ClinicRepositoryImpl implements ClinicRepository {
 
   @override
   Future<Either<Failure, List<ClinicEntity>>> getClinics() async {
-    // Ini fungsi lama (sudah benar)
     try {
-      final List<ClinicEntity> clinics = await remoteDataSource.getClinics();
-      return Right(clinics);
+      final result = await remoteDataSource.getClinics();
+      return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
     }
   }
 
-  // INI IMPLEMENTASI FUNGSI BARU DARI LANGKAH 9
   @override
-  Future<Either<Failure, ClinicDetailEntity>> getClinicDetail(
-      String clinicId) async {
+  Future<Either<Failure, ClinicDetailEntity>> getClinicDetail(String clinicId) async {
     try {
-      // Panggil "Tukang Bor"
-      final clinicDetail = await remoteDataSource.getClinicDetail(clinicId);
-
-      // Sukses! Kembalikan data di sisi 'Right'
-      return Right(clinicDetail);
+      final result = await remoteDataSource.getClinicDetail(clinicId);
+      return Right(result);
     } on ServerException catch (e) {
-      // Gagal!
+      return Left(ServerFailure(message: e.message));
+    }
+  }
+
+  // --- [BARU] Implementasi Add Review ---
+  @override
+  Future<Either<Failure, void>> addReview(String clinicId, ReviewEntity review) async {
+    try {
+      // Konversi Entity ke Model
+      final reviewModel = ReviewModel(
+        id: review.id,
+        userId: review.userId,
+        username: review.username,
+        rating: review.rating,
+        comment: review.comment,
+        date: review.date,
+      );
+      
+      await remoteDataSource.addReview(clinicId: clinicId, review: reviewModel);
+      return const Right(null);
+    } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
     }
   }
