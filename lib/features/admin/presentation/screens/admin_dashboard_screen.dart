@@ -324,6 +324,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
+          color: Colors.white,
           elevation: 2,
           shadowColor: Colors.black.withOpacity(0.10),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -536,6 +537,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
         title: const Text("Logout"),
         content: const Text("Keluar dari admin?"),
         actions: [

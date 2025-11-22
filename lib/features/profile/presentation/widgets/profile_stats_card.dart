@@ -42,7 +42,7 @@ class ProfileStatsCard extends StatelessWidget {
           ),
 
           // Garis Pembatas Vertikal
-          Container(height: 40, width: 1, color: Colors.grey[200]),
+          Container(height: 40, width: 1, color: Colors.grey[350]),
 
           // 2. BOOKING AKTIF & SELESAI (Ambil dari MyBookingsCubit)
           BlocBuilder<MyBookingsCubit, MyBookingsState>(
@@ -65,8 +65,8 @@ class ProfileStatsCard extends StatelessWidget {
                     value: activeBookings.toString(),
                     color: Colors.blue,
                   ),
-                  const SizedBox(width: 30), // Jarak antar item
-                   Container(height: 40, width: 1, color: Colors.grey[200], margin: const EdgeInsets.only(right: 30)),
+                  const SizedBox(width: 45), // Jarak antar item
+                  
                   _buildStatItem(
                     context,
                     icon: EvaIcons.checkmarkCircle2Outline,

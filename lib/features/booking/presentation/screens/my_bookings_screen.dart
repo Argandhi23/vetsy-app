@@ -254,6 +254,7 @@ class MyBookingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text("Batalkan Janji Temu?", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
         content: Text(
