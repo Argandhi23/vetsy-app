@@ -67,7 +67,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
       create: (context) => sl<BookingCubit>(),
       child: BlocConsumer<BookingCubit, BookingState>(
         listener: (context, state) {
-          // [FIX 1] Handle Success
+          // [FIX 1] Handle Success (Tetap Sama)
           if (state.status == BookingPageStatus.success) {
             showDialog(
               context: context,
@@ -95,12 +95,32 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
               ),
             );
           } 
-          // [FIX 2] Handle Error (Agar tidak diam saja kalau gagal)
+          // [FIX 2] Handle Error (Disempurnakan untuk Race Condition)
           else if (state.status == BookingPageStatus.error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage ?? "Terjadi kesalahan"),
-                backgroundColor: Colors.red,
+            // Cek apakah errornya karena slot penuh (pesan dari backend tadi)
+            final bool isSlotTaken = state.errorMessage?.contains("diambil pengguna lain") ?? false;
+
+            showDialog(
+              context: context,
+              barrierDismissible: false, // User harus klik tombol OK
+              builder: (ctx) => AlertDialog(
+                title: Text("Booking Gagal", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.red)),
+                content: Text(
+                  state.errorMessage ?? "Terjadi kesalahan sistem.",
+                  style: GoogleFonts.poppins(),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx); // Tutup dialog
+                      // Jika slot sudah diambil orang, kembalikan user ke layar sebelumnya untuk pilih jam lain
+                      if (isSlotTaken) {
+                        context.pop(); 
+                      }
+                    },
+                    child: const Text("OK, Pilih Jam Lain"),
+                  ),
+                ],
               ),
             );
           }

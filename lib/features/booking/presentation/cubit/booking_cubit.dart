@@ -8,7 +8,6 @@ import 'package:vetsy_app/features/booking/presentation/cubit/my_bookings/my_boo
 import 'package:vetsy_app/features/clinic/domain/entities/service_entity.dart';
 import 'package:vetsy_app/features/pet/domain/entities/pet_entity.dart';
 import 'package:vetsy_app/features/pet/domain/usecases/get_my_pets_usecase.dart';
-// [WAJIB] Import Repository
 import 'package:vetsy_app/features/booking/domain/repositories/booking_repository.dart';
 
 part 'booking_state.dart';
@@ -18,7 +17,6 @@ class BookingCubit extends Cubit<BookingState> {
   final CreateBookingUseCase createBookingUseCase;
   final FirebaseAuth firebaseAuth;
   final MyBookingsCubit myBookingsCubit;
-  // [BARU] Tambahkan ini
   final BookingRepository bookingRepository; 
 
   BookingCubit({
@@ -26,7 +24,7 @@ class BookingCubit extends Cubit<BookingState> {
     required this.createBookingUseCase,
     required this.firebaseAuth,
     required this.myBookingsCubit,
-    required this.bookingRepository, // [BARU]
+    required this.bookingRepository,
   }) : super(const BookingState());
 
   Future<void> fetchInitialData() async {
@@ -44,16 +42,15 @@ class BookingCubit extends Cubit<BookingState> {
     emit(state.copyWith(selectedPet: pet));
   }
 
-  // [UPDATE] Menerima clinicId untuk cek slot penuh
-  Future<void> onDateSelected(String clinicId, DateTime date) async {
+  // [UPDATE] Menerima serviceId untuk cek slot spesifik layanan
+  Future<void> onDateSelected(String clinicId, String serviceId, DateTime date) async {
     emit(state.copyWith(
       selectedDate: date,
-      selectedTime: null, // Reset jam
+      selectedTime: null, // Reset jam ketika tanggal berubah
       status: BookingPageStatus.loadingSlots,
     ));
 
-    // Cek database
-    final result = await bookingRepository.getOccupiedSlots(clinicId, date);
+    final result = await bookingRepository.getOccupiedSlots(clinicId, serviceId, date);
 
     result.fold(
       (failure) => emit(state.copyWith(
@@ -61,7 +58,6 @@ class BookingCubit extends Cubit<BookingState> {
         errorMessage: "Gagal cek jadwal: ${failure.message}"
       )),
       (occupiedDates) {
-        // Konversi DateTime ke TimeOfDay untuk dibandingkan di UI
         final busyList = occupiedDates
             .map((dt) => TimeOfDay(hour: dt.hour, minute: dt.minute))
             .toList();
@@ -78,7 +74,6 @@ class BookingCubit extends Cubit<BookingState> {
     emit(state.copyWith(selectedTime: time));
   }
 
-  // Fungsi Submit dengan Payment (Sudah Benar)
   Future<void> submitBooking({
     required String clinicId,
     required String clinicName,

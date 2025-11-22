@@ -175,8 +175,8 @@ class BookingView extends StatelessWidget {
                       },
                     );
                     if (picked != null && context.mounted) {
-                      // [UPDATE] Panggil fungsi onDateSelected dengan clinicId untuk cek slot
-                      context.read<BookingCubit>().onDateSelected(clinicId, picked);
+                      // [UPDATE] Kirim service.id untuk cek slot per layanan
+                      context.read<BookingCubit>().onDateSelected(clinicId, service.id, picked);
                     }
                   },
                   child: Container(
@@ -213,7 +213,6 @@ class BookingView extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text("3. Pilih Jam", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
-                    // Tampilkan loading spinner kecil saat sedang mengecek slot
                     if (state.status == BookingPageStatus.loadingSlots)
                       const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                   ],
@@ -228,13 +227,11 @@ class BookingView extends StatelessWidget {
                     child: Text("Silakan pilih tanggal terlebih dahulu.", style: GoogleFonts.poppins(color: Colors.grey), textAlign: TextAlign.center),
                   )
                 else
-                  // --- [GRID SLOT JAM] ---
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
                     children: _buildTimeSlots(context, state),
                   ),
-                // -----------------------
 
                 const SizedBox(height: 40),
 
@@ -282,7 +279,7 @@ class BookingView extends StatelessWidget {
 
   // --- [HELPER: BUILD GRID SLOT] ---
   List<Widget> _buildTimeSlots(BuildContext context, BookingState state) {
-    // Jam Operasional Hardcoded (Bisa diganti dinamis nanti)
+    // Jam Operasional Hardcoded (Bisa diganti dinamis jika diperlukan)
     final List<TimeOfDay> operationalHours = [
       const TimeOfDay(hour: 9, minute: 0),
       const TimeOfDay(hour: 10, minute: 0),
@@ -300,19 +297,20 @@ class BookingView extends StatelessWidget {
       final isSelected = state.selectedTime?.hour == time.hour && state.selectedTime?.minute == time.minute;
 
       return InkWell(
+        // [LOGIC UI] Jika booked, onTap null (tidak bisa diklik)
         onTap: isBooked 
-            ? null // Kalau penuh, disable klik
+            ? null 
             : () => context.read<BookingCubit>().onTimeSelected(time),
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          width: 80, // Ukuran kotak
+          width: 80, 
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isBooked 
-                ? Colors.grey[300] // Abu-abu = Penuh
+                ? Colors.grey[300] // Warna Abu-abu jika penuh
                 : isSelected 
-                    ? Theme.of(context).primaryColor // Biru = Dipilih
-                    : Colors.white, // Putih = Tersedia
+                    ? Theme.of(context).primaryColor // Biru jika dipilih
+                    : Colors.white, // Putih jika tersedia
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected ? Theme.of(context).primaryColor : Colors.grey.shade300,

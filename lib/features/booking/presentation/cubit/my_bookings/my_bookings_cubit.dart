@@ -2,17 +2,17 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
 import 'package:vetsy_app/features/booking/domain/usecases/get_my_bookings_usecase.dart';
-import 'package:vetsy_app/features/booking/domain/usecases/cancel_booking_usecase.dart'; // 1. IMPORT
+import 'package:vetsy_app/features/booking/domain/usecases/cancel_booking_usecase.dart';
 
 part 'my_bookings_state.dart';
 
 class MyBookingsCubit extends Cubit<MyBookingsState> {
   final GetMyBookingsUseCase getMyBookingsUseCase;
-  final CancelBookingUseCase cancelBookingUseCase; // 2. TAMBAH VARIABEL
+  final CancelBookingUseCase cancelBookingUseCase;
 
   MyBookingsCubit({
     required this.getMyBookingsUseCase,
-    required this.cancelBookingUseCase, // 3. MASUKKAN KE CONSTRUCTOR
+    required this.cancelBookingUseCase,
   }) : super(const MyBookingsState());
 
   Future<void> fetchMyBookings() async {
@@ -26,22 +26,29 @@ class MyBookingsCubit extends Cubit<MyBookingsState> {
     );
   }
 
-  // 4. FUNGSI EKSEKUSI CANCEL
-  Future<void> cancelBooking(String bookingId) async {
-    final result = await cancelBookingUseCase(bookingId);
+  // Fungsi Cancel dengan validasi 2 jam (dari UseCase)
+  Future<void> cancelBooking(BookingEntity booking) async {
+    emit(state.copyWith(status: MyBookingsStatus.loading));
+
+    final result = await cancelBookingUseCase(booking.id, booking.scheduleDate);
     
     result.fold(
       (failure) {
-        // Jika gagal, tampilkan error (opsional: bisa pakai snackbar di UI)
-        emit(state.copyWith(errorMessage: failure.message));
+        // Jika gagal, kembalikan error message dan refresh data
+        emit(state.copyWith(
+          status: MyBookingsStatus.error, 
+          errorMessage: failure.message
+        ));
+        fetchMyBookings();
       },
       (_) {
-        // Jika sukses, REFRESH data booking
+        // Jika sukses, refresh data
         fetchMyBookings();
       },
     );
   }
 
+  // [DITAMBAHKAN KEMBALI] Fungsi ini dibutuhkan oleh main.dart saat logout
   void reset() {
     emit(const MyBookingsState());
   }

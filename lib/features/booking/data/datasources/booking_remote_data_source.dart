@@ -7,8 +7,8 @@ abstract class BookingRemoteDataSource {
   Future<void> createBooking(BookingEntity booking);
   Future<List<BookingModel>> getMyBookings(String userId);
   Future<void> cancelBooking(String bookingId);
-  // [BARU] Ambil daftar jam yang sibuk
-  Future<List<DateTime>> getOccupiedSlots(String clinicId, DateTime date);
+  // [UPDATE] Tambah parameter serviceId
+  Future<List<DateTime>> getOccupiedSlots(String clinicId, String serviceId, DateTime date);
 }
 
 class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
@@ -17,15 +17,16 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
   BookingRemoteDataSourceImpl({required this.firestore});
 
   @override
-  Future<List<DateTime>> getOccupiedSlots(String clinicId, DateTime date) async {
+  Future<List<DateTime>> getOccupiedSlots(String clinicId, String serviceId, DateTime date) async {
     try {
-      // Cari booking dari jam 00:00 sampai 23:59 di hari tersebut
       final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
       final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
 
+      // [UPDATE LOGIC] Filter berdasarkan ClinicID DAN ServiceID
       final snapshot = await firestore
           .collection('bookings')
           .where('clinicId', isEqualTo: clinicId)
+          .where('service.id', isEqualTo: serviceId) // Kunci agar layanan lain tidak ikut penuh
           .where('scheduleDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
           .where('scheduleDate', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
           .get();
@@ -33,7 +34,7 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
       final List<DateTime> occupied = [];
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        // Jika statusnya bukan Cancelled, berarti slot itu TERPAKAI
+        // Hanya masukkan ke daftar sibuk jika statusnya bukan 'Cancelled'
         if (data['status'] != 'Cancelled') {
           occupied.add((data['scheduleDate'] as Timestamp).toDate());
         }
@@ -48,8 +49,29 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
   Future<void> createBooking(BookingEntity booking) async {
     try {
       final model = BookingModel.fromEntity(booking);
-      await firestore.collection('bookings').add(model.toFirestore());
+
+      // ID Unik kombinasi Klinik + Layanan + Waktu
+      final String uniqueSlotId = 
+          '${booking.clinicId}_${booking.service.id}_${booking.scheduleDate.millisecondsSinceEpoch}';
+
+      final docRef = firestore.collection('bookings').doc(uniqueSlotId);
+
+      await firestore.runTransaction((transaction) async {
+        final docSnapshot = await transaction.get(docRef);
+
+        if (docSnapshot.exists) {
+          final data = docSnapshot.data();
+          if (data != null && data['status'] != 'Cancelled') {
+            throw ServerException(message: "Maaf, slot waktu ini baru saja diambil pengguna lain.");
+          }
+        }
+        transaction.set(docRef, model.toFirestore());
+      });
+      
     } catch (e) {
+      if (e is ServerException) {
+        rethrow;
+      }
       throw ServerException(message: e.toString());
     }
   }

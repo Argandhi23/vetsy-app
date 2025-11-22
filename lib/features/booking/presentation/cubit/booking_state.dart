@@ -10,7 +10,7 @@ class BookingState extends Equatable {
   final TimeOfDay? selectedTime;
   final String? errorMessage;
   
-  // [BARU] List jam yang sudah penuh
+  // List jam yang sudah penuh (Digunakan di BookingScreen untuk Grid)
   final List<TimeOfDay> busyTimes;
 
   const BookingState({

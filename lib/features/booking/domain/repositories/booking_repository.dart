@@ -7,6 +7,6 @@ abstract class BookingRepository {
   Future<Either<Failure, List<BookingEntity>>> getMyBookings();
   Future<Either<Failure, void>> cancelBooking(String bookingId);
   
-  // [UPDATE] Pakai ini untuk Grid System
-  Future<Either<Failure, List<DateTime>>> getOccupiedSlots(String clinicId, DateTime date);
+  // [UPDATE] Tambah serviceId
+  Future<Either<Failure, List<DateTime>>> getOccupiedSlots(String clinicId, String serviceId, DateTime date);
 }

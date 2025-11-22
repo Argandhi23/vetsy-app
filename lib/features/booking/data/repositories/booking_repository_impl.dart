@@ -16,11 +16,10 @@ class BookingRepositoryImpl implements BookingRepository {
     required this.firebaseAuth,
   });
 
-  // [PERBAIKAN] Implementasi getOccupiedSlots
   @override
-  Future<Either<Failure, List<DateTime>>> getOccupiedSlots(String clinicId, DateTime date) async {
+  Future<Either<Failure, List<DateTime>>> getOccupiedSlots(String clinicId, String serviceId, DateTime date) async {
     try {
-      final result = await remoteDataSource.getOccupiedSlots(clinicId, date);
+      final result = await remoteDataSource.getOccupiedSlots(clinicId, serviceId, date);
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
@@ -30,11 +29,12 @@ class BookingRepositoryImpl implements BookingRepository {
   @override
   Future<Either<Failure, void>> createBooking(BookingEntity booking) async {
     try {
-      final bookingModel = BookingModel.fromEntity(booking);
-      await remoteDataSource.createBooking(bookingModel);
+      await remoteDataSource.createBooking(booking);
       return const Right(null);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
     }
   }
 

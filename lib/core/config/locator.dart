@@ -49,18 +49,19 @@ import 'package:vetsy_app/features/home/presentation/cubit/banner_cubit.dart';
 final sl = GetIt.instance;
 
 Future<void> setupLocator() async {
-  
   // EXTERNAL
   sl.registerSingleton<FirebaseAuth>(FirebaseAuth.instance);
   sl.registerSingleton<FirebaseFirestore>(FirebaseFirestore.instance);
 
   // AUTH
   sl.registerLazySingleton<AuthCubit>(
-      () => AuthCubit(firebaseAuth: sl(), firestore: sl()));
+    () => AuthCubit(firebaseAuth: sl(), firestore: sl()),
+  );
   sl.registerFactory(() => GetUserProfileUseCase(repository: sl()));
   sl.registerFactory(() => UpdateUserProfileUseCase(repository: sl()));
   sl.registerLazySingleton<AuthRepository>(
-      () => AuthRepositoryImpl(firebaseAuth: sl(), firestore: sl()));
+    () => AuthRepositoryImpl(firebaseAuth: sl(), firestore: sl()),
+  );
 
   // CLINIC
   sl.registerLazySingleton(() => ClinicCubit(getClinicsUseCase: sl()));
@@ -68,54 +69,66 @@ Future<void> setupLocator() async {
   sl.registerFactory(() => GetClinicsUseCase(repository: sl()));
   sl.registerFactory(() => GetClinicDetailUseCase(repository: sl()));
   sl.registerLazySingleton<ClinicRepository>(
-      () => ClinicRepositoryImpl(remoteDataSource: sl()));
+    () => ClinicRepositoryImpl(remoteDataSource: sl()),
+  );
   sl.registerLazySingleton<ClinicRemoteDataSource>(
-      () => ClinicRemoteDataSourceImpl(firestore: sl()));
+    () => ClinicRemoteDataSourceImpl(firestore: sl()),
+  );
   sl.registerLazySingleton(() => AddReviewUseCase(repository: sl()));
   sl.registerFactory(() => ReviewCubit(addReviewUseCase: sl()));
 
   // PET
-  sl.registerLazySingleton(() => MyPetsCubit(
-        getMyPetsUseCase: sl(),
-        addPetUseCase: sl(),
-        deletePetUseCase: sl(),
-        updatePetUseCase: sl(),
-      ));
+  sl.registerLazySingleton(
+    () => MyPetsCubit(
+      getMyPetsUseCase: sl(),
+      addPetUseCase: sl(),
+      deletePetUseCase: sl(),
+      updatePetUseCase: sl(),
+    ),
+  );
   sl.registerFactory(() => GetMyPetsUseCase(repository: sl()));
   sl.registerFactory(() => AddPetUseCase(repository: sl()));
   sl.registerFactory(() => UpdatePetUseCase(repository: sl()));
   sl.registerFactory(() => DeletePetUseCase(repository: sl()));
   sl.registerLazySingleton<PetRepository>(
-      () => PetRepositoryImpl(remoteDataSource: sl(), firebaseAuth: sl()));
+    () => PetRepositoryImpl(remoteDataSource: sl(), firebaseAuth: sl()),
+  );
   sl.registerLazySingleton<PetRemoteDataSource>(
-      () => PetRemoteDataSourceImpl(firestore: sl()));
+    () => PetRemoteDataSourceImpl(firestore: sl()),
+  );
 
   // BOOKING
   // [UPDATE] Register BookingCubit dengan bookingRepository
-  sl.registerFactory(() => BookingCubit(
-        getMyPetsUseCase: sl(),
-        createBookingUseCase: sl(),
-        firebaseAuth: sl(),
-        myBookingsCubit: sl(),
-        bookingRepository: sl(), // Tambahkan ini
-      ));
-  sl.registerLazySingleton(() => MyBookingsCubit(
-    getMyBookingsUseCase: sl(),
-    cancelBookingUseCase: sl(),
-  ));
+  sl.registerFactory(
+    () => BookingCubit(
+      getMyPetsUseCase: sl(),
+      createBookingUseCase: sl(),
+      firebaseAuth: sl(),
+      myBookingsCubit: sl(),
+      bookingRepository: sl(), // Tambahkan ini
+    ),
+  );
+  sl.registerLazySingleton(
+    () =>
+        MyBookingsCubit(getMyBookingsUseCase: sl(), cancelBookingUseCase: sl()),
+  );
   sl.registerFactory(() => CreateBookingUseCase(repository: sl()));
   sl.registerFactory(() => GetMyBookingsUseCase(repository: sl()));
-  sl.registerFactory(() => CancelBookingUseCase(repository: sl())); 
+  sl.registerFactory(() => CancelBookingUseCase(repository: sl()));
   sl.registerLazySingleton<BookingRepository>(
-      () => BookingRepositoryImpl(remoteDataSource: sl(), firebaseAuth: sl()));
+    () => BookingRepositoryImpl(remoteDataSource: sl(), firebaseAuth: sl()),
+  );
   sl.registerLazySingleton<BookingRemoteDataSource>(
-      () => BookingRemoteDataSourceImpl(firestore: sl()));
+    () => BookingRemoteDataSourceImpl(firestore: sl()),
+  );
 
   // PROFILE
-  sl.registerLazySingleton(() => ProfileCubit(
-    getUserProfileUseCase: sl(),
-    updateUserProfileUseCase: sl(),
-  ));
+  sl.registerLazySingleton(
+    () => ProfileCubit(
+      getUserProfileUseCase: sl(),
+      updateUserProfileUseCase: sl(),
+    ),
+  );
 
   // BANNER
   sl.registerFactory(() => BannerCubit(firestore: sl()));
