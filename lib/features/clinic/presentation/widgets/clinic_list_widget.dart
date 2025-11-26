@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart'; // [BARU] Import ini
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -142,13 +143,32 @@ class _ClinicListWidgetState extends State<ClinicListWidget> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // [PERBAIKAN] Menggunakan CachedNetworkImage
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: Image.network(
-                                  clinic.imageUrl,
-                                  width: 90, height: 90, fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => Container(
-                                    width: 90, height: 90, color: Colors.grey[200],
+                                child: CachedNetworkImage(
+                                  imageUrl: clinic.imageUrl,
+                                  width: 90, 
+                                  height: 90, 
+                                  fit: BoxFit.cover,
+                                  // Tampilan saat sedang loading gambar
+                                  placeholder: (context, url) => Container(
+                                    width: 90, 
+                                    height: 90, 
+                                    color: Colors.grey[200],
+                                    child: const Center(
+                                      child: SizedBox(
+                                        width: 20, 
+                                        height: 20, 
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                    ),
+                                  ),
+                                  // Tampilan jika gambar gagal dimuat/error
+                                  errorWidget: (context, url, error) => Container(
+                                    width: 90, 
+                                    height: 90, 
+                                    color: Colors.grey[200],
                                     child: const Icon(Icons.error, color: Colors.grey),
                                   ),
                                 ),

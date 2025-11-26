@@ -7,6 +7,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:vetsy_app/core/config/app_router.dart';
 import 'package:vetsy_app/core/config/app_theme.dart';
 import 'package:vetsy_app/core/config/locator.dart';
+import 'package:vetsy_app/core/services/notification_service.dart'; // [BARU] Import Notifikasi
 import 'firebase_options.dart';
 
 // Import Semua Cubit
@@ -15,14 +16,20 @@ import 'package:vetsy_app/features/booking/presentation/cubit/my_bookings/my_boo
 import 'package:vetsy_app/features/pet/presentation/cubit/my_pets_cubit.dart';
 import 'package:vetsy_app/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:vetsy_app/features/clinic/presentation/cubit/clinic_cubit.dart';
-import 'package:vetsy_app/features/home/presentation/cubit/banner_cubit.dart'; // [PENTING] Import Banner
+import 'package:vetsy_app/features/home/presentation/cubit/banner_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
   await setupLocator();
+  
+  // [BARU] Inisialisasi Service Notifikasi di sini
+  await NotificationService().init();
+  
   await initializeDateFormatting('id_ID', null);
 
   runApp(const MainApp());
@@ -42,12 +49,11 @@ class _MainAppState extends State<MainApp> {
     super.initState();
     _authSubscription = sl<AuthCubit>().stream.listen((authState) {
       if (authState is Authenticated) {
-        // Fetch data saat login
+        // Fetch data saat login (Menggunakan Singleton Locator)
         sl<MyPetsCubit>().fetchMyPets();
         sl<MyBookingsCubit>().fetchMyBookings();
         sl<ProfileCubit>().fetchUserProfile();
         sl<ClinicCubit>().fetchClinics();
-        // Banner tidak perlu di sini karena fetch di provider bawah
       } else if (authState is Unauthenticated) {
         // Reset data saat logout
         sl<MyPetsCubit>().reset();
@@ -75,10 +81,8 @@ class _MainAppState extends State<MainApp> {
             BlocProvider(create: (context) => sl<ProfileCubit>()),
             BlocProvider(create: (context) => sl<ClinicCubit>()),
             
-            // --- [BAGIAN YANG KURANG TADI] ---
-            // Kita inject BannerCubit dan langsung panggil fetchBanners()
+            // Banner langsung fetch saat inisialisasi
             BlocProvider(create: (context) => sl<BannerCubit>()..fetchBanners()),
-            // ---------------------------------
           ],
           child: MaterialApp.router(
             title: 'Vetsy App',
