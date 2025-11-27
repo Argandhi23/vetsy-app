@@ -1,4 +1,3 @@
-// lib/features/pet/domain/usecases/get_my_pets_usecase.dart
 import 'package:dartz/dartz.dart';
 import 'package:vetsy_app/core/errors/failures.dart';
 import 'package:vetsy_app/features/pet/domain/entities/pet_entity.dart';
@@ -9,8 +8,18 @@ class GetMyPetsUseCase {
 
   GetMyPetsUseCase({required this.repository});
 
-  // Usecase ini bisa dipanggil seperti fungsi biasa
+  // Usecase ini dipanggil oleh BookingCubit (butuh Future/Sekali ambil)
   Future<Either<Failure, List<PetEntity>>> call() async {
-    return await repository.getMyPets();
+    try {
+      // [PERBAIKAN] 
+      // Kita ambil data dari Stream, tapi cuma elemen pertamanya saja (.first)
+      // Ini mengubah Stream menjadi Future (Snapshot sekali ambil)
+      final pets = await repository.getMyPetsStream().first;
+      
+      return Right(pets);
+    } catch (e) {
+      // Tangkap error jika ada masalah koneksi/stream
+      return Left(ServerFailure(message: e.toString()));
+    }
   }
 }

@@ -8,8 +8,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:vetsy_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:vetsy_app/features/clinic/presentation/cubit/clinic_cubit.dart';
 import 'package:vetsy_app/features/clinic/presentation/screens/clinic_detail_screen.dart';
-// [UPDATE] Import Banner
 import 'package:vetsy_app/features/home/presentation/cubit/banner_cubit.dart';
+// [UPDATE] Import Halaman Notifikasi
+import 'package:vetsy_app/features/notification/presentation/screens/notification_screen.dart';
 
 class HomeTabView extends StatefulWidget {
   const HomeTabView({super.key});
@@ -35,8 +36,6 @@ class _HomeTabViewState extends State<HomeTabView> {
         _selectedCategory = category;
       }
     });
-    // [NOTE] Pastikan ClinicCubit sudah punya fungsi filterByCategory
-    // Jika belum, logic ini hanya akan mengubah UI state tombol
     context.read<ClinicCubit>().filterByCategory(_selectedCategory);
   }
 
@@ -85,10 +84,28 @@ class _HomeTabViewState extends State<HomeTabView> {
                                     Text(username, style: GoogleFonts.poppins(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
                                   ],
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
-                                  child: const Icon(EvaIcons.bellOutline, color: Colors.white),
+                                
+                                // [PERBAIKAN] Tombol Notifikasi Sekarang Bisa Diklik
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      // Navigasi ke Halaman Notifikasi
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                                      );
+                                    },
+                                    borderRadius: BorderRadius.circular(50),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2), 
+                                        shape: BoxShape.circle
+                                      ),
+                                      child: const Icon(EvaIcons.bellOutline, color: Colors.white),
+                                    ),
+                                  ),
                                 )
                               ],
                             ),
@@ -149,10 +166,10 @@ class _HomeTabViewState extends State<HomeTabView> {
             ),
           ),
 
-          // 3. [UPDATE] BANNER PROMO (DINAMIS)
+          // 3. BANNER PROMO (DINAMIS)
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 120, // Tinggi tetap agar layout stabil
+              height: 120, 
               child: BlocBuilder<BannerCubit, BannerState>(
                 builder: (context, state) {
                   if (state is BannerLoading) {
@@ -161,11 +178,9 @@ class _HomeTabViewState extends State<HomeTabView> {
                   
                   if (state is BannerLoaded) {
                     if (state.banners.isEmpty) {
-                      // Fallback Tampilan Jika Kosong (Desain Bouncy Container Statis)
                       return _buildStaticPromoBanner(); 
                     }
 
-                    // CAROUSEL BANNER
                     return PageView.builder(
                       controller: PageController(viewportFraction: 0.85),
                       itemCount: state.banners.length,
@@ -174,10 +189,9 @@ class _HomeTabViewState extends State<HomeTabView> {
                         return BouncyContainer(
                           onTap: () {},
                           child: Container(
-                            margin: const EdgeInsets.only(right: 16), // Jarak antar slide
+                            margin: const EdgeInsets.only(right: 16), 
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(20),
-                              // Mengambil gambar dari URL
                               image: DecorationImage(
                                 image: NetworkImage(banner.imageUrl),
                                 fit: BoxFit.cover,
@@ -190,7 +204,6 @@ class _HomeTabViewState extends State<HomeTabView> {
                     );
                   }
                   
-                  // Default / Error (Tampilkan Statis)
                   return _buildStaticPromoBanner();
                 },
               ),
@@ -249,8 +262,6 @@ class _HomeTabViewState extends State<HomeTabView> {
                       (context, index) {
                         final clinic = state.clinics[index];
                         final fakeDistance = ((index + 1) * 1.2).toStringAsFixed(1);
-                        
-                        // Menggunakan data rating asli jika ada, fallback ke 0.0
                         final ratingValue = clinic.rating > 0 ? clinic.rating.toStringAsFixed(1) : "Baru";
 
                         return BouncyContainer(

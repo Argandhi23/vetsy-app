@@ -1,82 +1,192 @@
-// lib/data_seeder.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
-final db = FirebaseFirestore.instance;
+class DataSeeder {
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-final List<Map<String, dynamic>> clinics = [
-  {
-    "name": "Klinik Hewan Sehat Surabaya",
-    "address": "Jl. Raya Unesa No. 1, Surabaya",
-    "imageUrl": "https://images.pexels.com/photos/208984/pexels-photo-208984.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    "latitude": -7.300847,
-    "longitude": 112.674367,
-    "phone": "6281234567890", // <-- TAMBAHKAN INI
-    "categories": ["Dokter", "Grooming", "Vaksinasi"],
-    "services": [
-      {"name": "Vaksinasi Rabies", "price": 150000},
-      {"name": "Grooming Mandi Jamur", "price": 100000},
-      {"name": "Konsultasi Dokter", "price": 75000}
-    ]
-  },
-  {
-    "name": "Surabaya PetCare Center",
-    "address": "Jl. Lidah Wetan No. 45, Surabaya",
-    "imageUrl": "https://images.pexels.com/photos/1805164/pexels-photo-1805164.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    "latitude": -7.296400,
-    "longitude": 112.665300,
-    "phone": "6289876543210", // <-- TAMBAHKAN INI
-    "categories": ["Dokter", "Grooming", "Steril"],
-    "services": [
-      {"name": "Sterilisasi Kucing Jantan", "price": 350000},
-      {"name": "Grooming Kutu", "price": 120000},
-      {"name": "Cek Darah Lengkap", "price": 250000}
-    ]
-  },
-  {
-    "name": "Klinik Sahabat Hewan",
-    "address": "Jl. Wiyung Indah No. 12",
-    "imageUrl": "https://images.pexels.com/photos/5749133/pexels-photo-5749133.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    "latitude": -7.315000,
-    "longitude": 112.695000,
-    "phone": "6281122334455", // <-- TAMBAHKAN INI
-    "categories": ["Pet Hotel", "Dokter", "Vaksinasi"],
-    "services": [
-      {"name": "Pasang Microchip", "price": 175000},
-      {"name": "USG Hewan", "price": 200000},
-      {"name": "Penitipan Sehat (Per Hari)", "price": 50000},
-      {"name": "Vaksin Lengkap", "price": 180000}
-    ]
+  Future<void> seed() async {
+    debugPrint('\n===================================================');
+    debugPrint('🧹 1. MEMBERSIHKAN DATA LAMA (AUTO-CLEAN)...');
+    debugPrint('===================================================');
+
+    // Hapus semua data lama dulu biar tidak numpuk/double
+    await _clearCollection('clinics');
+    await _clearCollection('services');
+    await _clearCollection('veterinarians');
+    await _clearCollection('reviews');
+    await _clearCollection('bookings'); 
+
+    debugPrint('\n===================================================');
+    debugPrint('🌱 2. MULAI SEEDING 3 KLINIK BARU...');
+    debugPrint('===================================================');
+
+    WriteBatch batch = firestore.batch();
+
+    // ==============================================
+    // 🏥 KLINIK 1: Vetsy Pusat (Lengkap)
+    // ==============================================
+    final clinicARef = firestore.collection('clinics').doc();
+    final String clinicAId = clinicARef.id;
+
+    batch.set(clinicARef, {
+      'id': clinicAId,
+      'name': 'Vetsy Care Center (Pusat)',
+      'address': 'Jl. Sahabat Satwa No. 1, Jakarta Selatan',
+      'description': 'Klinik hewan modern dengan fasilitas terlengkap dan dokter spesialis.',
+      'imageUrl': 'https://images.pexels.com/photos/6235233/pexels-photo-6235233.jpeg',
+      'rating': 4.9,
+      'totalReviews': 150,
+      'phone': '081234567890',
+      'openTime': '08:00',
+      'closeTime': '21:00',
+      'categories': ['Dokter', 'Grooming', 'Vaksinasi', 'Steril'],
+      'facilities': ['Pet Hotel', 'Grooming', 'USG', 'Operasi'],
+    });
+
+    // Service Klinik A (Mahal & Lengkap)
+    await _addServices(batch, clinicAId, [
+      {'name': 'Vaksin Lengkap (Tricat)', 'price': 185000, 'cat': 'Vaksinasi'},
+      {'name': 'Grooming Premium', 'price': 120000, 'cat': 'Grooming'},
+      {'name': 'Steril Kucing Jantan', 'price': 450000, 'cat': 'Steril'},
+      {'name': 'Konsultasi Spesialis', 'price': 150000, 'cat': 'Dokter'},
+    ]);
+
+    _addDummyBooking(batch, clinicAId, 'Vetsy Care Center', 'Mochi', 185000);
+
+
+    // ==============================================
+    // 🏥 KLINIK 2: Happy Paws (Fokus Grooming)
+    // ==============================================
+    final clinicBRef = firestore.collection('clinics').doc();
+    final String clinicBId = clinicBRef.id;
+
+    batch.set(clinicBRef, {
+      'id': clinicBId,
+      'name': 'Happy Paws Clinic',
+      'address': 'Jl. Melati Indah No. 45, Bandung',
+      'description': 'Spesialis perawatan bulu dan vaksinasi hewan kesayangan.',
+      'imageUrl': 'https://images.pexels.com/photos/1805164/pexels-photo-1805164.jpeg',
+      'rating': 4.5,
+      'totalReviews': 80,
+      'phone': '089876543210',
+      'openTime': '10:00',
+      'closeTime': '20:00',
+      'categories': ['Grooming', 'Vaksinasi'], // Cuma 2 kategori
+      'facilities': ['Parkir Luas', 'WiFi', 'Pet Shop'],
+    });
+
+    // Service Klinik B (Murah)
+    await _addServices(batch, clinicBId, [
+      {'name': 'Mandi Sehat', 'price': 70000, 'cat': 'Grooming'},
+      {'name': 'Vaksin Rabies', 'price': 150000, 'cat': 'Vaksinasi'},
+      {'name': 'Potong Kuku & Rapikan', 'price': 35000, 'cat': 'Grooming'},
+    ]);
+
+    _addDummyBooking(batch, clinicBId, 'Happy Paws', 'Bruno', 70000);
+
+
+    // ==============================================
+    // 🏥 KLINIK 3: Satwa Sejahtera (Fokus Medis)
+    // ==============================================
+    final clinicCRef = firestore.collection('clinics').doc();
+    final String clinicCId = clinicCRef.id;
+
+    batch.set(clinicCRef, {
+      'id': clinicCId,
+      'name': 'Klinik Satwa Sejahtera',
+      'address': 'Jl. Diponegoro No. 12, Surabaya',
+      'description': 'Klinik senior dengan layanan gawat darurat 24 jam.',
+      'imageUrl': 'https://images.pexels.com/photos/5749133/pexels-photo-5749133.jpeg',
+      'rating': 4.7,
+      'totalReviews': 210,
+      'phone': '081998877665',
+      'openTime': '24 Jam', // Buka terus
+      'closeTime': '24 Jam',
+      'categories': ['Dokter', 'Steril', 'Vaksinasi'],
+      'facilities': ['UGD 24 Jam', 'Rontgen', 'Lab Darah'],
+    });
+
+    // Service Klinik C (Medis Berat)
+    await _addServices(batch, clinicCId, [
+      {'name': 'Konsultasi Umum', 'price': 90000, 'cat': 'Dokter'},
+      {'name': 'Steril Kucing Betina', 'price': 800000, 'cat': 'Steril'},
+      {'name': 'Cek Darah Lengkap', 'price': 300000, 'cat': 'Dokter'},
+      {'name': 'Rawat Inap (Per Hari)', 'price': 150000, 'cat': 'Dokter'},
+    ]);
+
+    _addDummyBooking(batch, clinicCId, 'Satwa Sejahtera', 'Chiko', 150000);
+
+
+    // EKSEKUSI SEMUA
+    await batch.commit();
+
+    // ==============================================
+    // 🖨️ OUTPUT ID ADMIN
+    // ==============================================
+    debugPrint('\n✅ ===================================================');
+    debugPrint('✅ SEEDING SUKSES! DATA LAMA SUDAH BERSIH. 🗑️✨');
+    debugPrint('✅ SILAKAN PILIH ADMIN UNTUK SETIAP KLINIK:');
+    debugPrint('---------------------------------------------------');
+    debugPrint('👉 KLINIK 1 (Vetsy Pusat) ID:     $clinicAId');
+    debugPrint('👉 KLINIK 2 (Happy Paws) ID:      $clinicBId');
+    debugPrint('👉 KLINIK 3 (Satwa Sejahtera) ID: $clinicCId');
+    debugPrint('---------------------------------------------------');
+    debugPrint('ℹ️  Copy ID di atas -> Paste ke "clinicId" di Firestore User');
+    debugPrint('✅ ===================================================\n');
   }
-];
 
-Future<void> seedData() async {
-  print("=== MULAI SEEDING ===");
-  final batch = db.batch();
-  final clinicsCollection = db.collection("clinics");
-
-  for (final clinicData in clinics) {
-    final clinicRef = clinicsCollection.doc();
+  // --- HELPER: HAPUS DATA PER COLLECTION ---
+  Future<void> _clearCollection(String collectionName) async {
+    final snapshot = await firestore.collection(collectionName).limit(500).get();
     
-    final clinicPayload = {
-      "id": clinicRef.id,
-      "name": clinicData['name'],
-      "address": clinicData['address'],
-      "imageUrl": clinicData['imageUrl'],
-      "latitude": clinicData['latitude'],
-      "longitude": clinicData['longitude'],
-      "phone": clinicData['phone'], // <-- PASTIKAN INI DISIMPAN
-      "categories": clinicData['categories'],
-    };
+    if (snapshot.docs.isEmpty) return;
 
-    batch.set(clinicRef, clinicPayload);
+    WriteBatch batch = firestore.batch();
+    int count = 0;
 
-    final services = clinicData['services'] as List<Map<String, dynamic>>;
-    for (final serviceData in services) {
-      final serviceRef = clinicRef.collection("services").doc();
-      batch.set(serviceRef, serviceData);
+    for (var doc in snapshot.docs) {
+      batch.delete(doc.reference);
+      count++;
+      // Commit per 400 dokumen (Batas Firestore 500)
+      if (count >= 400) {
+        await batch.commit();
+        batch = firestore.batch();
+        count = 0;
+      }
+    }
+    if (count > 0) await batch.commit();
+    
+    debugPrint('🗑️  Collection "$collectionName" BERSIH.');
+  }
+
+  // --- HELPER: TAMBAH SERVICES ---
+  Future<void> _addServices(WriteBatch batch, String clinicId, List<Map> services) async {
+    for (var s in services) {
+      final ref = firestore.collection('services').doc();
+      batch.set(ref, {
+        'id': ref.id,
+        'clinicId': clinicId,
+        'name': s['name'],
+        'price': s['price'],
+        'category': s['cat'],
+      });
     }
   }
 
-  await batch.commit();
-  print("=== SELESAI ===");
+  // --- HELPER: TAMBAH DUMMY BOOKING ---
+  void _addDummyBooking(WriteBatch batch, String clinicId, String clinicName, String petName, int total) {
+    final ref = firestore.collection('bookings').doc();
+    batch.set(ref, {
+      'id': ref.id,
+      'userId': 'user_dummy',
+      'clinicId': clinicId,
+      'clinicName': clinicName,
+      'petName': petName,
+      'service': {'name': 'Layanan Contoh', 'price': total},
+      'scheduleDate': Timestamp.now(),
+      'status': 'Pending',
+      'paymentStatus': 'Unpaid',
+      'grandTotal': total,
+    });
+  }
 }

@@ -1,4 +1,3 @@
-// lib/features/pet/data/repositories/pet_repository_impl.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,17 +17,13 @@ class PetRepositoryImpl implements PetRepository {
   });
 
   @override
-  Future<Either<Failure, List<PetEntity>>> getMyPets() async {
-    try {
-      final user = firebaseAuth.currentUser;
-      if (user == null) {
-        return Left(ServerFailure(message: "User tidak terautentikasi"));
-      }
-      final List<PetEntity> pets = await remoteDataSource.getMyPets(user.uid);
-      return Right(pets);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+  Stream<List<PetEntity>> getMyPetsStream() {
+    final user = firebaseAuth.currentUser;
+    if (user == null) {
+      return const Stream.empty();
     }
+    // Langsung return stream dari datasource
+    return remoteDataSource.getMyPetsStream(user.uid);
   }
 
   @override
@@ -36,28 +31,23 @@ class PetRepositoryImpl implements PetRepository {
     required String name,
     required String type,
     required String breed,
-    required int age,      // <-- Tambah
-    required double weight, // <-- Tambah
+    required int age,
+    required double weight,
   }) async {
     try {
       final user = firebaseAuth.currentUser;
-      if (user == null) {
-        return Left(ServerFailure(message: "User tidak terautentikasi"));
-      }
-      
-      // UPDATE MAP DATA
-      final Map<String, dynamic> petData = {
-        'name': name,
-        'type': type,
-        'breed': breed,
-        'age': age,        // <-- Masukkan ke map
-        'weight': weight,  // <-- Masukkan ke map
-        'createdAt': FieldValue.serverTimestamp(),
-      };
+      if (user == null) return Left(ServerFailure(message: "User tidak login"));
       
       await remoteDataSource.addPet(
         userId: user.uid,
-        petData: petData,
+        petData: {
+          'name': name,
+          'type': type,
+          'breed': breed,
+          'age': age,
+          'weight': weight,
+          'createdAt': FieldValue.serverTimestamp(),
+        },
       );
       return const Right(null);
     } on ServerException catch (e) {
@@ -69,13 +59,9 @@ class PetRepositoryImpl implements PetRepository {
   Future<Either<Failure, void>> deletePet(String petId) async {
     try {
       final user = firebaseAuth.currentUser;
-      if (user == null) {
-        return Left(ServerFailure(message: "User tidak terautentikasi"));
-      }
-      await remoteDataSource.deletePet(
-        userId: user.uid,
-        petId: petId,
-      );
+      if (user == null) return Left(ServerFailure(message: "User tidak login"));
+      
+      await remoteDataSource.deletePet(userId: user.uid, petId: petId);
       return const Right(null);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));
@@ -86,25 +72,19 @@ class PetRepositoryImpl implements PetRepository {
   Future<Either<Failure, void>> updatePet(PetEntity pet) async {
     try {
       final user = firebaseAuth.currentUser;
-      if (user == null) {
-        return Left(ServerFailure(message: "User tidak terautentikasi"));
-      }
-
-      // UPDATE MAP DI SINI JUGA
-      final Map<String, dynamic> petData = {
-        'name': pet.name,
-        'type': pet.type,
-        'breed': pet.breed,
-        'age': pet.age,       // <-- Ambil dari Entity
-        'weight': pet.weight, // <-- Ambil dari Entity
-      };
+      if (user == null) return Left(ServerFailure(message: "User tidak login"));
 
       await remoteDataSource.updatePet(
         userId: user.uid,
         petId: pet.id,
-        petData: petData,
+        petData: {
+          'name': pet.name,
+          'type': pet.type,
+          'breed': pet.breed,
+          'age': pet.age,
+          'weight': pet.weight,
+        },
       );
-
       return const Right(null);
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message));

@@ -7,7 +7,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:vetsy_app/core/config/app_router.dart';
 import 'package:vetsy_app/core/config/app_theme.dart';
 import 'package:vetsy_app/core/config/locator.dart';
-import 'package:vetsy_app/core/services/notification_service.dart'; // [BARU] Import Notifikasi
+import 'package:vetsy_app/core/services/notification_service.dart';
 import 'firebase_options.dart';
 
 // Import Semua Cubit
@@ -17,6 +17,8 @@ import 'package:vetsy_app/features/pet/presentation/cubit/my_pets_cubit.dart';
 import 'package:vetsy_app/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:vetsy_app/features/clinic/presentation/cubit/clinic_cubit.dart';
 import 'package:vetsy_app/features/home/presentation/cubit/banner_cubit.dart';
+// [PENTING] Import NotificationCubit
+import 'package:vetsy_app/features/notification/presentation/cubit/notification_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,8 +29,8 @@ void main() async {
   
   await setupLocator();
   
-  // [BARU] Inisialisasi Service Notifikasi di sini
-  await NotificationService().init();
+  // Inisialisasi Service Notifikasi (Izin, Channel, dll)
+  await sl<NotificationService>().init();
   
   await initializeDateFormatting('id_ID', null);
 
@@ -49,16 +51,21 @@ class _MainAppState extends State<MainApp> {
     super.initState();
     _authSubscription = sl<AuthCubit>().stream.listen((authState) {
       if (authState is Authenticated) {
-        // Fetch data saat login (Menggunakan Singleton Locator)
+        // Fetch data saat login
         sl<MyPetsCubit>().fetchMyPets();
         sl<MyBookingsCubit>().fetchMyBookings();
         sl<ProfileCubit>().fetchUserProfile();
         sl<ClinicCubit>().fetchClinics();
+        
+        // [BARU] Aktifkan Pendengar Notifikasi (Agar bunyi saat admin update)
+        sl<NotificationCubit>().initNotificationListener();
+
       } else if (authState is Unauthenticated) {
         // Reset data saat logout
         sl<MyPetsCubit>().reset();
         sl<MyBookingsCubit>().reset();
         sl<ProfileCubit>().reset();
+        // Listener notifikasi otomatis cancel via stream subscription di Cubit
       }
     });
   }
@@ -80,9 +87,9 @@ class _MainAppState extends State<MainApp> {
             BlocProvider(create: (context) => sl<MyBookingsCubit>()),
             BlocProvider(create: (context) => sl<ProfileCubit>()),
             BlocProvider(create: (context) => sl<ClinicCubit>()),
-            
-            // Banner langsung fetch saat inisialisasi
             BlocProvider(create: (context) => sl<BannerCubit>()..fetchBanners()),
+            // [BARU] Tambahkan NotificationCubit agar tersedia di app
+            BlocProvider(create: (context) => sl<NotificationCubit>()),
           ],
           child: MaterialApp.router(
             title: 'Vetsy App',

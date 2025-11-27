@@ -2,11 +2,11 @@ import 'package:dartz/dartz.dart';
 import 'package:vetsy_app/core/errors/exception.dart';
 import 'package:vetsy_app/core/errors/failures.dart';
 import 'package:vetsy_app/features/clinic/data/datasources/clinic_remote_data_source.dart';
-import 'package:vetsy_app/features/clinic/data/models/review_model.dart'; // Import Model
+import 'package:vetsy_app/features/clinic/data/models/review_model.dart';
 import 'package:vetsy_app/features/clinic/data/models/service_model.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/clinic_detail_entity.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/clinic_entity.dart';
-import 'package:vetsy_app/features/clinic/domain/entities/review_entity.dart'; // Import Entity
+import 'package:vetsy_app/features/clinic/domain/entities/review_entity.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/service_entity.dart';
 import 'package:vetsy_app/features/clinic/domain/repositories/clinic_repository.dart';
 
@@ -36,16 +36,15 @@ class ClinicRepositoryImpl implements ClinicRepository {
     }
   }
 
-  // --- [BARU] Implementasi Add Review ---
   @override
   Future<Either<Failure, void>> addReview(
     String clinicId,
     ReviewEntity review,
   ) async {
     try {
-      // Konversi Entity ke Model
       final reviewModel = ReviewModel(
         id: review.id,
+        clinicId: clinicId, // [FIX] Wajib diisi (sudah kita tambah di Model)
         userId: review.userId,
         username: review.username,
         rating: review.rating,
@@ -68,6 +67,7 @@ class ClinicRepositoryImpl implements ClinicRepository {
     try {
       final model = ServiceModel(
         id: '',
+        clinicId: clinicId, // [FIX] Wajib menyertakan clinicId
         name: service.name,
         price: service.price,
       );
@@ -86,6 +86,7 @@ class ClinicRepositoryImpl implements ClinicRepository {
     try {
       final model = ServiceModel(
         id: service.id,
+        clinicId: clinicId, // [FIX] Wajib menyertakan clinicId
         name: service.name,
         price: service.price,
       );

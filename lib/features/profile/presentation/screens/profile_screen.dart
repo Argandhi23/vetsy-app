@@ -151,7 +151,11 @@ class ProfileScreen extends StatelessWidget {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Memproses data...'))
                             );
-                            await seedData();
+                            
+                            // [PERBAIKAN DI SINI]
+                            // Memanggil method instance dari Class DataSeeder
+                            await DataSeeder().seed();
+                            
                             if(context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(

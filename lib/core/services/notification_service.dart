@@ -1,5 +1,5 @@
-import 'dart:io'; // Import ini boleh ada, tapi jangan dipanggil fungsinya di Web
-import 'package:flutter/foundation.dart'; // [PENTING] Untuk cek kIsWeb
+import 'dart:io'; 
+import 'package:flutter/foundation.dart'; 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -13,18 +13,13 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
-    // [FIX] Jika berjalan di Web, langsung berhenti (return) agar tidak crash
-    // karena notifikasi lokal ini didesain untuk Mobile (Android/iOS).
     if (kIsWeb) return; 
 
-    // Inisialisasi Timezone
     tz_data.initializeTimeZones();
 
-    // Setup Android
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // Setup iOS
     final DarwinInitializationSettings initializationSettingsDarwin =
         DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -39,7 +34,6 @@ class NotificationService {
 
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
     
-    // Minta Izin Notifikasi (Hanya jalan di Android, jadi aman karena sudah di-cek kIsWeb diatas)
     if (Platform.isAndroid) {
       final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
           flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
@@ -49,13 +43,43 @@ class NotificationService {
     }
   }
 
+  // [BARU] Fungsi untuk menampilkan notifikasi langsung (Realtime dari Admin)
+  Future<void> showNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    if (kIsWeb) return;
+
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'info_channel', // ID Channel khusus info
+      'General Notifications',
+      channelDescription: 'Notifikasi umum aplikasi',
+      importance: Importance.max,
+      priority: Priority.high,
+      ticker: 'ticker',
+    );
+
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await flutterLocalNotificationsPlugin.show(
+      id,
+      title,
+      body,
+      platformChannelSpecifics,
+      payload: payload,
+    );
+  }
+
   Future<void> scheduleNotification({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledTime,
   }) async {
-    // [FIX] Jangan jalankan di Web
     if (kIsWeb) return;
 
     try {
@@ -81,16 +105,14 @@ class NotificationService {
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
-      print("✅ Notifikasi terjadwal: $scheduledTime");
+      debugPrint("✅ Notifikasi terjadwal: $scheduledTime");
     } catch (e) {
-      print("❌ Gagal schedule: $e");
+      debugPrint("❌ Gagal schedule: $e");
     }
   }
 
   Future<void> cancelNotification(int id) async {
-    // [FIX] Jangan jalankan di Web
     if (kIsWeb) return;
-    
     await flutterLocalNotificationsPlugin.cancel(id);
   }
 }

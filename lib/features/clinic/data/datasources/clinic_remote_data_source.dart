@@ -3,14 +3,13 @@ import 'package:vetsy_app/core/errors/exception.dart';
 import 'package:vetsy_app/features/clinic/data/models/clinic_detail_model.dart';
 import 'package:vetsy_app/features/clinic/data/models/clinic_model.dart';
 import 'package:vetsy_app/features/clinic/data/models/review_model.dart';
-import 'package:vetsy_app/features/clinic/data/models/service_model.dart'; // Pastikan import ini
+import 'package:vetsy_app/features/clinic/data/models/service_model.dart';
 
 abstract class ClinicRemoteDataSource {
   Future<List<ClinicModel>> getClinics();
   Future<ClinicDetailModel> getClinicDetail(String clinicId);
   Future<void> addReview({required String clinicId, required ReviewModel review});
 
-  // --- [FITUR BARU ADMIN] ---
   Future<void> addService({required String clinicId, required ServiceModel service});
   Future<void> updateService({required String clinicId, required ServiceModel service});
   Future<void> deleteService({required String clinicId, required String serviceId});
@@ -37,7 +36,12 @@ class ClinicRemoteDataSourceImpl implements ClinicRemoteDataSource {
       final clinicDoc = await firestore.collection('clinics').doc(clinicId).get();
       if (!clinicDoc.exists) throw ServerException(message: "Klinik tidak ditemukan");
 
-      final serviceSnapshot = await clinicDoc.reference.collection('services').get();
+      // [UBAH LOGIC] Ambil services dari Root Collection, filter by clinicId
+      final serviceSnapshot = await firestore
+          .collection('services')
+          .where('clinicId', isEqualTo: clinicId)
+          .get();
+
       return ClinicDetailModel.fromFirestore(clinicDoc, serviceSnapshot);
     } catch (e) {
       throw ServerException(message: e.toString());
@@ -47,7 +51,8 @@ class ClinicRemoteDataSourceImpl implements ClinicRemoteDataSource {
   @override
   Future<void> addReview({required String clinicId, required ReviewModel review}) async {
     final clinicRef = firestore.collection('clinics').doc(clinicId);
-    final reviewRef = clinicRef.collection('reviews').doc(); 
+    // [UBAH LOGIC] Simpan review di Root Collection 'reviews'
+    final reviewRef = firestore.collection('reviews').doc(); 
 
     try {
       await firestore.runTransaction((transaction) async {
@@ -60,7 +65,11 @@ class ClinicRemoteDataSourceImpl implements ClinicRemoteDataSource {
         final newTotal = currentTotal + 1;
         final newRating = ((currentRating * currentTotal) + review.rating) / newTotal;
 
-        transaction.set(reviewRef, review.toFirestore());
+        // Siapkan data review dengan clinicId
+        final reviewData = review.toFirestore();
+        reviewData['clinicId'] = clinicId; // Pastikan clinicId tersimpan
+
+        transaction.set(reviewRef, reviewData);
         transaction.update(clinicRef, {
           'rating': newRating,
           'totalReviews': newTotal,
@@ -71,16 +80,15 @@ class ClinicRemoteDataSourceImpl implements ClinicRemoteDataSource {
     }
   }
 
-  // --- [IMPLEMENTASI FITUR BARU] ---
+  // --- ADMIN SERVICES (ROOT COLLECTION) ---
   
   @override
   Future<void> addService({required String clinicId, required ServiceModel service}) async {
     try {
-      await firestore
-          .collection('clinics')
-          .doc(clinicId)
-          .collection('services')
-          .add(service.toFirestore());
+      final serviceData = service.toFirestore();
+      serviceData['clinicId'] = clinicId; // Inject clinicId
+
+      await firestore.collection('services').add(serviceData);
     } catch (e) {
       throw ServerException(message: e.toString());
     }
@@ -89,12 +97,8 @@ class ClinicRemoteDataSourceImpl implements ClinicRemoteDataSource {
   @override
   Future<void> updateService({required String clinicId, required ServiceModel service}) async {
     try {
-      await firestore
-          .collection('clinics')
-          .doc(clinicId)
-          .collection('services')
-          .doc(service.id)
-          .update(service.toFirestore());
+      // Update langsung ke Root Collection
+      await firestore.collection('services').doc(service.id).update(service.toFirestore());
     } catch (e) {
       throw ServerException(message: e.toString());
     }
@@ -103,12 +107,8 @@ class ClinicRemoteDataSourceImpl implements ClinicRemoteDataSource {
   @override
   Future<void> deleteService({required String clinicId, required String serviceId}) async {
     try {
-      await firestore
-          .collection('clinics')
-          .doc(clinicId)
-          .collection('services')
-          .doc(serviceId)
-          .delete();
+      // Delete langsung dari Root Collection
+      await firestore.collection('services').doc(serviceId).delete();
     } catch (e) {
       throw ServerException(message: e.toString());
     }

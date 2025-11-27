@@ -75,7 +75,9 @@ class BookingDetailScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(24.0),
                     child: Column(
                       children: [
+                        // [PERBAIKAN STATUS]
                         _buildStatusIcon(context, booking.status),
+                        
                         const SizedBox(height: 16),
                         Text(
                           booking.service.name,
@@ -122,7 +124,7 @@ class BookingDetailScreen extends StatelessWidget {
               ),
             ).animate().slideY(begin: 0.1, duration: 500.ms).fadeIn(),
 
-            // --- TOMBOL ULASAN (Update: Pakai BottomSheet) ---
+            // --- TOMBOL ULASAN ---
             if (booking.status.toLowerCase() == 'completed') ...[
               const SizedBox(height: 24),
               SizedBox(
@@ -131,11 +133,10 @@ class BookingDetailScreen extends StatelessWidget {
                   onPressed: () {
                     final user = FirebaseAuth.instance.currentUser;
                     if (user != null) {
-                      // MENGGUNAKAN SHOW MODAL BOTTOM SHEET (MODERN)
                       showModalBottomSheet(
                         context: context,
-                        isScrollControlled: true, // Agar bisa full height saat keyboard muncul
-                        backgroundColor: Colors.transparent, // Agar rounded corner terlihat
+                        isScrollControlled: true, 
+                        backgroundColor: Colors.transparent,
                         builder: (context) => AddReviewDialog(
                           clinicId: booking.clinicId,
                           userId: user.uid,
@@ -156,7 +157,6 @@ class BookingDetailScreen extends StatelessWidget {
                 ),
               ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2),
             ],
-            // ------------------------------------------------
           ],
         ),
       ),
@@ -168,16 +168,24 @@ class BookingDetailScreen extends StatelessWidget {
     Color color;
     String text;
 
-    switch (status.toLowerCase()) {
-      case 'completed':
+    // [LOGIKA LABEL STATUS]
+    switch (status) {
+      case 'Completed':
         icon = EvaIcons.checkmarkCircle2;
         color = Colors.green;
         text = "Selesai";
         break;
-      case 'cancelled':
+      case 'Cancelled':
+      case 'Rejected':
         icon = EvaIcons.closeCircle;
         color = Colors.red;
         text = "Dibatalkan";
+        break;
+      case 'InProgress': // Status Baru
+      case 'Confirmed':  // Legacy Status
+        icon = EvaIcons.activity; // Ikon Aktif
+        color = Colors.blue;
+        text = "Sedang Dikerjakan"; // Label Baru
         break;
       default:
         icon = EvaIcons.clock;

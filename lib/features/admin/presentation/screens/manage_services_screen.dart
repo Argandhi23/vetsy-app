@@ -23,7 +23,6 @@ class ManageServicesScreen extends StatelessWidget {
         leading: const BackButton(color: Colors.black),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        // GANTI: Pakai Modal Bottom Sheet Modern
         onPressed: () => _showServiceSheet(context), 
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
@@ -31,10 +30,10 @@ class ManageServicesScreen extends StatelessWidget {
         label: Text("Tambah Layanan", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
       ),
       body: StreamBuilder<QuerySnapshot>(
+        // [PERBAIKAN 1] Ubah Query ke Root Collection 'services' + Filter clinicId
         stream: FirebaseFirestore.instance
-            .collection('clinics')
-            .doc(clinicId)
             .collection('services')
+            .where('clinicId', isEqualTo: clinicId) // Hanya ambil service milik klinik ini
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -61,6 +60,7 @@ class ManageServicesScreen extends StatelessWidget {
             itemCount: docs.length,
             itemBuilder: (context, index) {
               final data = docs[index];
+              // Menggunakan ServiceModel.fromFirestore agar aman
               final service = ServiceModel.fromFirestore(data);
 
               return Container(
@@ -103,10 +103,10 @@ class ManageServicesScreen extends StatelessWidget {
     );
   }
 
-  // --- [MODERN BOTTOM SHEET UI] ---
+  // --- FORM TAMBAH / EDIT LAYANAN ---
   void _showServiceSheet(BuildContext context, {ServiceModel? service, String? docId}) {
     final nameCtrl = TextEditingController(text: service?.name);
-    final priceCtrl = TextEditingController(text: service?.price.toInt().toString());
+    final priceCtrl = TextEditingController(text: service != null ? service.price.toInt().toString() : '');
 
     showModalBottomSheet(
       context: context,
@@ -173,17 +173,25 @@ class ManageServicesScreen extends StatelessWidget {
                   final price = double.tryParse(priceCtrl.text) ?? 0;
                   
                   if (name.isNotEmpty && price > 0) {
-                    final collection = FirebaseFirestore.instance
-                        .collection('clinics')
-                        .doc(clinicId)
-                        .collection('services');
+                    // [PERBAIKAN 2] Operasi ke Root Collection 'services'
+                    final collection = FirebaseFirestore.instance.collection('services');
 
                     if (service == null) {
-                      await collection.add({'name': name, 'price': price});
+                      // CREATE: Wajib masukkan clinicId (Foreign Key)
+                      await collection.add({
+                        'clinicId': clinicId, 
+                        'name': name, 
+                        'price': price,
+                        'category': 'Umum' // Default category biar aman
+                      });
                     } else {
-                      await collection.doc(docId).update({'name': name, 'price': price});
+                      // UPDATE: Cari berdasarkan ID Dokumen Root
+                      await collection.doc(docId).update({
+                        'name': name, 
+                        'price': price
+                      });
                     }
-                    Navigator.pop(ctx);
+                    if(context.mounted) Navigator.pop(ctx);
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -201,6 +209,7 @@ class ManageServicesScreen extends StatelessWidget {
     );
   }
 
+  // --- HAPUS LAYANAN ---
   void _deleteService(BuildContext context, String docId) {
     showDialog(
       context: context,
@@ -212,13 +221,12 @@ class ManageServicesScreen extends StatelessWidget {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal", style: TextStyle(color: Colors.grey))),
           ElevatedButton(
             onPressed: () async {
+              // [PERBAIKAN 3] Hapus dari Root Collection
               await FirebaseFirestore.instance
-                  .collection('clinics')
-                  .doc(clinicId)
                   .collection('services')
                   .doc(docId)
                   .delete();
-              Navigator.pop(ctx);
+              if(context.mounted) Navigator.pop(ctx);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             child: const Text("Hapus"),

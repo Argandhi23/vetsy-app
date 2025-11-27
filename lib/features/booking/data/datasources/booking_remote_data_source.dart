@@ -5,9 +5,14 @@ import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
 
 abstract class BookingRemoteDataSource {
   Future<void> createBooking(BookingEntity booking);
+  
+  // [LEGACY] Tetap disimpan untuk kompatibilitas (jika ada yang pakai Future)
   Future<List<BookingModel>> getMyBookings(String userId);
+  
+  // [BARU] Stream Realtime untuk Auto-Refresh di MyBookingsCubit
+  Stream<List<BookingModel>> getMyBookingsStream(String userId); 
+  
   Future<void> cancelBooking(String bookingId);
-  // [UPDATE] Tambah parameter serviceId
   Future<List<DateTime>> getOccupiedSlots(String clinicId, String serviceId, DateTime date);
 }
 
@@ -22,7 +27,7 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
       final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
       final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
 
-      // [UPDATE LOGIC] Filter berdasarkan ClinicID DAN ServiceID
+      // Filter berdasarkan ClinicID DAN ServiceID
       final snapshot = await firestore
           .collection('bookings')
           .where('clinicId', isEqualTo: clinicId)
@@ -51,6 +56,7 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
       final model = BookingModel.fromEntity(booking);
 
       // ID Unik kombinasi Klinik + Layanan + Waktu
+      // Mencegah double booking di detik yang sama
       final String uniqueSlotId = 
           '${booking.clinicId}_${booking.service.id}_${booking.scheduleDate.millisecondsSinceEpoch}';
 
@@ -89,6 +95,22 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
     } catch (e) {
       throw ServerException(message: e.toString());
     }
+  }
+
+  // [IMPLEMENTASI STREAM REALTIME]
+  // Menggunakan snapshots() agar data selalu update tanpa perlu refresh manual
+  @override
+  Stream<List<BookingModel>> getMyBookingsStream(String userId) {
+    return firestore
+        .collection('bookings')
+        .where('userId', isEqualTo: userId)
+        .orderBy('scheduleDate', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => BookingModel.fromFirestore(doc))
+              .toList();
+        });
   }
 
   @override

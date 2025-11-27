@@ -2,7 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:vetsy_app/core/services/notification_service.dart'; // Pastikan path ini sesuai
+import 'package:vetsy_app/core/services/notification_service.dart';
 import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
 import 'package:vetsy_app/features/booking/domain/usecases/create_booking_usecase.dart';
 import 'package:vetsy_app/features/booking/presentation/cubit/my_bookings/my_bookings_cubit.dart';
@@ -126,32 +126,25 @@ class BookingCubit extends Cubit<BookingState> {
 
     result.fold(
       (failure) {
-        // Gagal Booking
         emit(state.copyWith(
           status: BookingPageStatus.error,
           errorMessage: failure.message,
         ));
       },
       (success) async {
-        // Sukses Booking -> Jadwalkan Notifikasi
-        
-        // --- LOGIKA NOTIFIKASI [UPDATED] ---
+        // --- LOGIKA NOTIFIKASI LOCAL ---
         try {
-          // ID unik dari timestamp (detik) agar tidak bentrok dengan notif lain
           final int notificationId = combinedDateTime.millisecondsSinceEpoch ~/ 1000;
           
-          // Hitung waktu pengingat: 2 Jam sebelum jadwal
           DateTime reminderTime = combinedDateTime.subtract(const Duration(hours: 2));
           
-          // Cek Apakah Waktu Pengingat Sudah Lewat? (Kasus Booking Dadakan)
           final now = DateTime.now();
+          // Jika waktu booking mepet (< 2 jam), set notif 10 menit dari sekarang
           if (reminderTime.isBefore(now)) {
-            // Jika jadwalnya < 2 jam lagi, set notif untuk 10 menit dari SEKARANG
-            // sebagai konfirmasi/reminder cepat.
             reminderTime = now.add(const Duration(minutes: 10));
           }
 
-          // Pastikan reminderTime tidak melebihi jadwal asli (opsional, tapi aman)
+          // Pastikan jadwal notifikasi valid (belum lewat dari jadwal asli)
           if (reminderTime.isBefore(combinedDateTime)) {
              await NotificationService().scheduleNotification(
               id: notificationId, 
@@ -165,13 +158,11 @@ class BookingCubit extends Cubit<BookingState> {
           }
 
         } catch (e) {
-          // Error notifikasi tidak boleh mengganggu flow booking
           debugPrint("❌ Gagal menjadwalkan notifikasi: $e");
         }
         // -----------------------------------
 
-        // Refresh list booking & update UI
-        myBookingsCubit.fetchMyBookings();
+        // [FIX] Hapus myBookingsCubit.fetchMyBookings() karena sekarang sudah Stream
         emit(state.copyWith(status: BookingPageStatus.success));
       },
     );

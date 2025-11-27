@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:vetsy_app/core/config/locator.dart';
 import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
 import 'package:vetsy_app/features/booking/presentation/cubit/my_bookings/my_bookings_cubit.dart';
 import 'package:vetsy_app/features/booking/presentation/screens/booking_detail_screen.dart';
@@ -14,66 +13,71 @@ class MyBookingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Menggunakan BlocProvider agar Cubit tersedia di tree widget ini
-    return BlocProvider(
-      create: (context) => sl<MyBookingsCubit>()..fetchMyBookings(),
-      child: DefaultTabController(
-        length: 2,
-        child: Scaffold(
-          backgroundColor: Colors.grey[50],
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            title: Text(
-              "Jadwal Saya",
-              style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.bold),
-            ),
-            centerTitle: false,
-            bottom: TabBar(
-              labelColor: Theme.of(context).primaryColor,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: Theme.of(context).primaryColor,
-              indicatorWeight: 3,
-              labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-              tabs: const [
-                Tab(text: "Aktif"),
-                Tab(text: "Riwayat"),
-              ],
-            ),
+    // [PERBAIKAN] Hapus BlocProvider di sini.
+    // Kita langsung pakai DefaultTabController karena Cubit sudah ada di main.dart
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: Text(
+            "Jadwal Saya",
+            style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.bold),
           ),
-          // Gunakan BlocConsumer untuk mendengarkan perubahan state & error
-          body: BlocConsumer<MyBookingsCubit, MyBookingsState>(
-            listener: (context, state) {
-              // Jika ada error (misal: gagal cancel karena < 2 jam), munculkan SnackBar Merah
-              if (state.status == MyBookingsStatus.error && state.errorMessage != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.errorMessage!),
-                    backgroundColor: Colors.red,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            builder: (context, state) {
-              if (state.status == MyBookingsStatus.loading && state.bookings.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              final bookings = state.bookings;
-              
-              // Filter data untuk Tab
-              final activeList = bookings.where((b) => ['Pending', 'Confirmed', 'Paid', 'Unpaid'].contains(b.status)).toList();
-              final historyList = bookings.where((b) => ['Completed', 'Cancelled', 'Rejected'].contains(b.status)).toList();
-
-              return TabBarView(
-                children: [
-                  _buildBookingList(context, activeList, isActive: true),
-                  _buildBookingList(context, historyList, isActive: false),
-                ],
+          centerTitle: false,
+          bottom: TabBar(
+            labelColor: Theme.of(context).primaryColor,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: Theme.of(context).primaryColor,
+            indicatorWeight: 3,
+            labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            tabs: const [
+              Tab(text: "Aktif"),
+              Tab(text: "Riwayat"),
+            ],
+          ),
+        ),
+        // Gunakan BlocConsumer langsung dari context global
+        body: BlocConsumer<MyBookingsCubit, MyBookingsState>(
+          listener: (context, state) {
+            if (state.status == MyBookingsStatus.error && state.errorMessage != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.errorMessage!),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                ),
               );
-            },
-          ),
+            }
+          },
+          builder: (context, state) {
+            // Loading hanya muncul jika data benar-benar kosong
+            if (state.status == MyBookingsStatus.loading && state.bookings.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final bookings = state.bookings;
+            
+            // Filter data untuk Tab
+            // Aktif: Menunggu, Dikerjakan, Belum Bayar
+            final activeList = bookings.where((b) => 
+              ['Pending', 'InProgress', 'Confirmed', 'Paid', 'Unpaid'].contains(b.status)
+            ).toList();
+            
+            // Riwayat: Selesai, Batal, Ditolak
+            final historyList = bookings.where((b) => 
+              ['Completed', 'Cancelled', 'Rejected'].contains(b.status)
+            ).toList();
+
+            return TabBarView(
+              children: [
+                _buildBookingList(context, activeList, isActive: true),
+                _buildBookingList(context, historyList, isActive: false),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -101,7 +105,10 @@ class MyBookingsScreen extends StatelessWidget {
     }
 
     return RefreshIndicator(
-      onRefresh: () => context.read<MyBookingsCubit>().fetchMyBookings(),
+      onRefresh: () async {
+        // Panggil fetch ulang jika user tarik layar
+        await context.read<MyBookingsCubit>().fetchMyBookings();
+      },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: bookings.length,
@@ -132,7 +139,7 @@ class MyBookingsScreen extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // --- [KOTAK TANGGAL] ---
+                        // KOTAK TANGGAL
                         Column(
                           children: [
                             Container(
@@ -167,7 +174,7 @@ class MyBookingsScreen extends StatelessWidget {
                         
                         const SizedBox(width: 16),
 
-                        // --- [INFO DETAIL] ---
+                        // INFO DETAIL
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,14 +212,13 @@ class MyBookingsScreen extends StatelessWidget {
                           ),
                         ),
 
-                        // --- [STATUS BOOKING] ---
+                        // STATUS BADGE
                         _buildStatusBadge(booking.status),
                       ],
                     ),
 
-                    // --- [TOMBOL BATALKAN] ---
-                    // Hanya muncul jika status Pending/Confirmed
-                    if (booking.status == 'Pending' || booking.status == 'Confirmed') ...[
+                    // TOMBOL BATALKAN (Hanya jika status Pending)
+                    if (booking.status == 'Pending') ...[
                       const SizedBox(height: 12),
                       const Divider(),
                       Align(
@@ -268,8 +274,7 @@ class MyBookingsScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(ctx); // Tutup dialog
-              // Panggil fungsi cancel di Cubit
+              Navigator.pop(ctx); 
               context.read<MyBookingsCubit>().cancelBooking(booking);
             },
             child: Text("Ya, Batalkan", style: GoogleFonts.poppins(color: Colors.red, fontWeight: FontWeight.bold)),
@@ -298,11 +303,26 @@ class MyBookingsScreen extends StatelessWidget {
     Color color;
     String label;
     switch (status) {
-      case 'Confirmed': color = Colors.blue; label = 'Diterima'; break;
-      case 'Completed': color = Colors.green; label = 'Selesai'; break;
-      case 'Cancelled': color = Colors.red; label = 'Batal'; break;
-      case 'Rejected': color = Colors.red; label = 'Ditolak'; break;
-      default: color = Colors.orange; label = 'Menunggu';
+      case 'InProgress': 
+      case 'Confirmed': 
+        color = Colors.blue; 
+        label = 'Dikerjakan'; 
+        break;
+      case 'Completed': 
+        color = Colors.green; 
+        label = 'Selesai'; 
+        break;
+      case 'Cancelled': 
+        color = Colors.red; 
+        label = 'Batal'; 
+        break;
+      case 'Rejected': 
+        color = Colors.red; 
+        label = 'Ditolak'; 
+        break;
+      default: 
+        color = Colors.orange; 
+        label = 'Menunggu';
     }
 
     return Column(
@@ -310,7 +330,8 @@ class MyBookingsScreen extends StatelessWidget {
       children: [
         Icon(
           status == 'Completed' ? EvaIcons.checkmarkCircle2 : 
-          (status == 'Cancelled' || status == 'Rejected') ? EvaIcons.closeCircle : EvaIcons.loaderOutline,
+          (status == 'Cancelled' || status == 'Rejected') ? EvaIcons.closeCircle : 
+          (status == 'InProgress' || status == 'Confirmed') ? EvaIcons.activity : EvaIcons.loaderOutline,
           color: color,
           size: 20,
         ),
