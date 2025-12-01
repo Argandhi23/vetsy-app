@@ -1,5 +1,5 @@
-import 'dart:io'; 
-import 'package:flutter/foundation.dart'; 
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -13,7 +13,7 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
-    if (kIsWeb) return; 
+    if (kIsWeb) return;
 
     tz_data.initializeTimeZones();
 
@@ -33,7 +33,8 @@ class NotificationService {
     );
 
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-    
+
+    // Minta izin (Wajib di Android 13+)
     if (Platform.isAndroid) {
       final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
           flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
@@ -43,7 +44,7 @@ class NotificationService {
     }
   }
 
-  // [BARU] Fungsi untuk menampilkan notifikasi langsung (Realtime dari Admin)
+  // Fungsi Tampil Langsung (Instant)
   Future<void> showNotification({
     required int id,
     required String title,
@@ -52,14 +53,17 @@ class NotificationService {
   }) async {
     if (kIsWeb) return;
 
+    // Setting Channel Khusus Info (High Priority)
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'info_channel', // ID Channel khusus info
-      'General Notifications',
-      channelDescription: 'Notifikasi umum aplikasi',
-      importance: Importance.max,
-      priority: Priority.high,
+      'info_channel_v2', // ID Channel (Ganti nama biar refresh setting di HP)
+      'Info Penting',
+      channelDescription: 'Notifikasi status booking',
+      importance: Importance.max, // WAJIB MAX agar muncul popup (Heads-up)
+      priority: Priority.high,    // WAJIB HIGH
       ticker: 'ticker',
+      playSound: true,
+      enableVibration: true,
     );
 
     const NotificationDetails platformChannelSpecifics =

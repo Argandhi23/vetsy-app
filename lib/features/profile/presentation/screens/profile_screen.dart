@@ -9,8 +9,7 @@ import 'package:vetsy_app/features/profile/presentation/cubit/profile_cubit.dart
 import 'package:vetsy_app/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:vetsy_app/features/profile/presentation/screens/about_app_screen.dart';
 import 'package:vetsy_app/features/profile/presentation/screens/change_password_screen.dart'; 
-import 'package:vetsy_app/data_seeder.dart'; 
-// Widget Statistik
+// Import data_seeder dihapus agar bersih
 import 'package:vetsy_app/features/profile/presentation/widgets/profile_stats_card.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -67,7 +66,7 @@ class ProfileScreen extends StatelessWidget {
                           )
                         ),
                       ),
-                      // Avatar (VERSI GRATIS / DEFAULT ICON)
+                      // Avatar
                       Positioned(
                         bottom: -50,
                         child: Container(
@@ -80,7 +79,6 @@ class ProfileScreen extends StatelessWidget {
                           child: CircleAvatar(
                             radius: 55,
                             backgroundColor: Colors.grey[200],
-                            // Kita hapus logika NetworkImage di sini
                             child: Icon(Icons.person, size: 60, color: Colors.grey[400]),
                           ),
                         ).animate().scale(duration: 600.ms, curve: Curves.elasticOut), 
@@ -102,7 +100,7 @@ class ProfileScreen extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
-                  // --- 3. STATISTIK DASHBOARD (Fitur Baru) ---
+                  // --- 3. STATISTIK DASHBOARD ---
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20),
                     child: ProfileStatsCard(), 
@@ -139,33 +137,8 @@ class ProfileScreen extends StatelessWidget {
                           color: Colors.purple,
                           onTap: () => context.goNamed(AboutAppScreen.routeName),
                         ),
-                        const SizedBox(height: 16),
                         
-                        // Menu Developer (Isi Data Klinik Dummy)
-                        _buildMenuTile(
-                          context,
-                          icon: EvaIcons.cloudUploadOutline,
-                          title: 'Isi Data Klinik (Dev Only)',
-                          color: Colors.orange,
-                          onTap: () async {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Memproses data...'))
-                            );
-                            
-                            // [PERBAIKAN DI SINI]
-                            // Memanggil method instance dari Class DataSeeder
-                            await DataSeeder().seed();
-                            
-                            if(context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('SUKSES! Cek Console.'), 
-                                  backgroundColor: Colors.green
-                                )
-                              );
-                            }
-                          },
-                        ),
+                        // Menu Data Seeder / Fixer SUDAH DIHAPUS agar bersih
                         
                         const SizedBox(height: 16),
                         _buildMenuTile(

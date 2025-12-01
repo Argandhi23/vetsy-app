@@ -1,11 +1,11 @@
 import 'package:bloc/bloc.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // [PENTING] Tambah ini
 import 'package:equatable/equatable.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:vetsy_app/core/services/notification_service.dart';
 import 'package:vetsy_app/features/booking/domain/entities/booking_entity.dart';
 import 'package:vetsy_app/features/booking/domain/usecases/create_booking_usecase.dart';
-import 'package:vetsy_app/features/booking/presentation/cubit/my_bookings/my_bookings_cubit.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/service_entity.dart';
 import 'package:vetsy_app/features/pet/domain/entities/pet_entity.dart';
 import 'package:vetsy_app/features/pet/domain/usecases/get_my_pets_usecase.dart';
@@ -17,14 +17,15 @@ class BookingCubit extends Cubit<BookingState> {
   final GetMyPetsUseCase getMyPetsUseCase;
   final CreateBookingUseCase createBookingUseCase;
   final FirebaseAuth firebaseAuth;
-  final MyBookingsCubit myBookingsCubit;
   final BookingRepository bookingRepository;
+  
+  // Instance Firestore untuk Batch Write
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   BookingCubit({
     required this.getMyPetsUseCase,
     required this.createBookingUseCase,
     required this.firebaseAuth,
-    required this.myBookingsCubit,
     required this.bookingRepository,
   }) : super(const BookingState());
 
@@ -76,7 +77,7 @@ class BookingCubit extends Cubit<BookingState> {
     emit(state.copyWith(selectedTime: time));
   }
 
-  // --- Submit Booking & Jadwalkan Notifikasi ---
+  // --- Submit Booking & Payment (Batch Write) ---
   Future<void> submitBooking({
     required String clinicId,
     required String clinicName,
@@ -95,76 +96,110 @@ class BookingCubit extends Cubit<BookingState> {
 
     emit(state.copyWith(status: BookingPageStatus.submitting));
 
-    // Gabungkan Tanggal & Waktu
-    final DateTime combinedDateTime = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-      selectedTime.hour,
-      selectedTime.minute,
-    );
+    try {
+      // 1. Siapkan Referensi Dokumen Baru
+      final bookingRef = firestore.collection('bookings').doc();
+      final paymentRef = firestore.collection('payments').doc();
 
-    final booking = BookingEntity.create(
-      userId: userId,
-      clinicId: clinicId,
-      petId: selectedPet.id,
-      petName: selectedPet.name,
-      clinicName: clinicName,
-      service: service,
-      scheduleDate: combinedDateTime,
-      status: "Pending",
-      totalPrice: totalPrice,
-      adminFee: adminFee,
-      grandTotal: grandTotal,
-      discountAmount: discountAmount,
-      paymentMethod: paymentMethod,
-      paymentStatus: "Unpaid",
-    );
+      // 2. Gabungkan Tanggal & Waktu
+      final DateTime combinedDateTime = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        selectedTime.hour,
+        selectedTime.minute,
+      );
 
-    // Kirim ke Backend/Firebase
-    final result = await createBookingUseCase(booking);
+      // 3. Siapkan Data BOOKING (Map)
+      final bookingData = {
+        'id': bookingRef.id,
+        'userId': userId,
+        'clinicId': clinicId,
+        'petId': selectedPet.id,
+        'petName': selectedPet.name,
+        'clinicName': clinicName,
+        'service': {
+          'id': service.id,
+          'name': service.name,
+          'price': service.price,
+        },
+        'scheduleDate': Timestamp.fromDate(combinedDateTime),
+        'status': 'Pending', // Status operasional booking
+        'paymentStatus': 'Unpaid', // Status pembayaran (karena bayar di klinik)
+        'grandTotal': grandTotal,
+        'paymentMethod': paymentMethod, // "Tunai di Klinik"
+        'createdAt': FieldValue.serverTimestamp(),
+      };
 
-    result.fold(
-      (failure) {
-        emit(state.copyWith(
-          status: BookingPageStatus.error,
-          errorMessage: failure.message,
-        ));
-      },
-      (success) async {
-        // --- LOGIKA NOTIFIKASI LOCAL ---
-        try {
-          final int notificationId = combinedDateTime.millisecondsSinceEpoch ~/ 1000;
-          
-          DateTime reminderTime = combinedDateTime.subtract(const Duration(hours: 2));
-          
-          final now = DateTime.now();
-          // Jika waktu booking mepet (< 2 jam), set notif 10 menit dari sekarang
-          if (reminderTime.isBefore(now)) {
-            reminderTime = now.add(const Duration(minutes: 10));
-          }
+      // 4. Siapkan Data PAYMENT (Map - Collection Terpisah)
+      final paymentData = {
+        'id': paymentRef.id,
+        'bookingId': bookingRef.id, // Relasi ke Booking
+        'userId': userId,
+        'clinicId': clinicId,
+        'amount': grandTotal,
+        'adminFee': adminFee,
+        'discount': discountAmount,
+        'method': paymentMethod,
+        'status': 'Pending', // Pending karena belum dibayar di kasir
+        'transactionDate': FieldValue.serverTimestamp(),
+        'invoiceNumber': 'INV-${DateTime.now().millisecondsSinceEpoch}',
+      };
 
-          // Pastikan jadwal notifikasi valid (belum lewat dari jadwal asli)
-          if (reminderTime.isBefore(combinedDateTime)) {
-             await NotificationService().scheduleNotification(
-              id: notificationId, 
-              title: "Halo, ${selectedPet.name} Siap? 🐶",
-              body: "Jangan lupa jadwal ${service.name} di $clinicName sebentar lagi ya!",
-              scheduledTime: reminderTime,
-            );
-            debugPrint("✅ Notifikasi dijadwalkan untuk: $reminderTime");
-          } else {
-             debugPrint("ℹ️ Waktu booking terlalu dekat, skip notifikasi pengingat.");
-          }
+      // 5. EKSEKUSI BATCH (Simpan ke 2 Collection Sekaligus)
+      final batch = firestore.batch();
+      batch.set(bookingRef, bookingData);
+      batch.set(paymentRef, paymentData);
+      
+      await batch.commit(); // Kirim ke Firebase
 
-        } catch (e) {
-          debugPrint("❌ Gagal menjadwalkan notifikasi: $e");
-        }
-        // -----------------------------------
+      // 6. LOGIKA NOTIFIKASI (Kode Asli Anda)
+      _scheduleNotification(combinedDateTime, service.name, selectedPet.name, clinicName);
 
-        // [FIX] Hapus myBookingsCubit.fetchMyBookings() karena sekarang sudah Stream
-        emit(state.copyWith(status: BookingPageStatus.success));
-      },
-    );
+      // 7. Sukses
+      emit(state.copyWith(status: BookingPageStatus.success));
+
+    } catch (e) {
+      emit(state.copyWith(
+        status: BookingPageStatus.error,
+        errorMessage: "Gagal memproses booking: $e",
+      ));
+    }
+  }
+
+  // --- Helper Notifikasi (Dipisah agar rapi) ---
+  Future<void> _scheduleNotification(
+    DateTime scheduleTime, 
+    String serviceName, 
+    String petName, 
+    String clinicName
+  ) async {
+    try {
+      final int notificationId = scheduleTime.millisecondsSinceEpoch ~/ 1000;
+      final now = DateTime.now();
+
+      // Hitung waktu normal: 2 Jam sebelum jadwal
+      DateTime reminderTime = scheduleTime.subtract(const Duration(hours: 2));
+      
+      // Cek Booking Dadakan
+      if (reminderTime.isBefore(now)) {
+        reminderTime = now.add(const Duration(minutes: 5));
+        debugPrint("⚠️ Booking Dadakan: Notifikasi dijadwalkan 5 menit lagi.");
+      } else {
+        debugPrint("✅ Booking Normal: Notifikasi dijadwalkan 2 jam sebelum.");
+      }
+
+      // Validasi: Jangan notif jika jadwal sudah lewat
+      if (reminderTime.isBefore(scheduleTime)) {
+          await NotificationService().scheduleNotification(
+            id: notificationId, 
+            title: "Pengingat Jadwal 🐾",
+            body: "Halo! Jadwal $serviceName untuk $petName sebentar lagi dimulai di $clinicName.",
+            scheduledTime: reminderTime,
+          );
+      }
+    } catch (e) {
+      debugPrint("❌ Gagal notifikasi: $e");
+    }
   }
 }

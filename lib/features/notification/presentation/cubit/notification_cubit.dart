@@ -3,6 +3,7 @@ import 'package:bloc/bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:vetsy_app/core/services/notification_service.dart';
 
 part 'notification_state.dart';
@@ -20,36 +21,47 @@ class NotificationCubit extends Cubit<NotificationState> {
     required this.firestore,
   }) : super(NotificationInitial());
 
-  // Fungsi ini dipanggil saat User Login (di main.dart)
   void initNotificationListener() {
     final user = auth.currentUser;
     if (user == null) return;
 
-    // Batalkan listener lama jika ada
     _notifSubscription?.cancel();
 
-    // Dengarkan collection 'notifications' milik user ini
+    debugPrint("🔔 [NotifCubit] Mulai mendengarkan notifikasi untuk: ${user.uid}");
+
+    // Flag untuk menandai data awal (Load pertama kali)
+    bool isFirstLoad = true;
+
     _notifSubscription = firestore
         .collection('notifications')
         .where('userId', isEqualTo: user.uid)
-        // Hanya ambil notifikasi yang dibuat SETELAH user login (biar notif lama ga bunyi semua)
-        .where('createdAt', isGreaterThan: Timestamp.now()) 
+        .orderBy('createdAt', descending: true)
+        .limit(10) // Batasi agar tidak berat
         .snapshots()
         .listen((snapshot) {
       
+      // Saat aplikasi baru dibuka, Firestore mengirim semua data yang ada.
+      // Kita tandai ini sebagai 'First Load' dan JANGAN bunyikan notifikasi (biar gak spam).
+      if (isFirstLoad) {
+        isFirstLoad = false;
+        return; 
+      }
+
       for (var change in snapshot.docChanges) {
-        // Jika ada data BARU ditambahkan
+        // Hanya bereaksi jika ada dokumen BARU yang ditambahkan (Realtime)
         if (change.type == DocumentChangeType.added) {
           final data = change.doc.data() as Map<String, dynamic>;
+          debugPrint("🔔 [NotifCubit] Notifikasi Baru Diterima: ${data['title']}");
           
-          // Puculkan Notifikasi di HP
           notificationService.showNotification(
             id: DateTime.now().millisecondsSinceEpoch ~/ 1000, 
             title: data['title'] ?? 'Info Baru', 
-            body: data['body'] ?? 'Ada pembaruan status booking.',
+            body: data['body'] ?? 'Ada pembaruan status.',
           );
         }
       }
+    }, onError: (e) {
+      debugPrint("❌ [NotifCubit] Error: $e");
     });
   }
 

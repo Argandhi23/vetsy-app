@@ -4,11 +4,13 @@ import 'package:equatable/equatable.dart';
 class BannerModel extends Equatable {
   final String id;
   final String imageUrl;
+  final String title; // [BARU] Tambahkan ini
   final bool isActive;
 
   const BannerModel({
     required this.id,
     required this.imageUrl,
+    required this.title, // [BARU]
     required this.isActive,
   });
 
@@ -17,10 +19,11 @@ class BannerModel extends Equatable {
     return BannerModel(
       id: doc.id,
       imageUrl: data['imageUrl'] ?? '',
+      title: data['title'] ?? '', // [BARU] Ambil title, default string kosong
       isActive: data['isActive'] ?? false,
     );
   }
 
   @override
-  List<Object?> get props => [id, imageUrl, isActive];
+  List<Object?> get props => [id, imageUrl, title, isActive];
 }

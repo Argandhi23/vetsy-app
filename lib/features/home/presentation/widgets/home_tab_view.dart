@@ -4,12 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image/cached_network_image.dart'; // Pastikan import ini ada
 import 'package:vetsy_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:vetsy_app/features/clinic/presentation/cubit/clinic_cubit.dart';
 import 'package:vetsy_app/features/clinic/presentation/screens/clinic_detail_screen.dart';
 import 'package:vetsy_app/features/home/presentation/cubit/banner_cubit.dart';
-// [UPDATE] Import Halaman Notifikasi
 import 'package:vetsy_app/features/notification/presentation/screens/notification_screen.dart';
 
 class HomeTabView extends StatefulWidget {
@@ -85,12 +84,11 @@ class _HomeTabViewState extends State<HomeTabView> {
                                   ],
                                 ),
                                 
-                                // [PERBAIKAN] Tombol Notifikasi Sekarang Bisa Diklik
+                                // Tombol Notifikasi
                                 Material(
                                   color: Colors.transparent,
                                   child: InkWell(
                                     onTap: () {
-                                      // Navigasi ke Halaman Notifikasi
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(builder: (context) => const NotificationScreen()),
@@ -166,10 +164,10 @@ class _HomeTabViewState extends State<HomeTabView> {
             ),
           ),
 
-          // 3. BANNER PROMO (DINAMIS)
+          // 3. BANNER PROMO (SUDAH DIPERBAIKI DENGAN CACHED IMAGE)
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 120, 
+              height: 140, // Sedikit diperbesar agar proporsional
               child: BlocBuilder<BannerCubit, BannerState>(
                 builder: (context, state) {
                   if (state is BannerLoading) {
@@ -190,13 +188,62 @@ class _HomeTabViewState extends State<HomeTabView> {
                           onTap: () {},
                           child: Container(
                             margin: const EdgeInsets.only(right: 16), 
-                            decoration: BoxDecoration(
+                            // [PERBAIKAN] Pakai ClipRRect + CachedNetworkImage
+                            child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
-                              image: DecorationImage(
-                                image: NetworkImage(banner.imageUrl),
-                                fit: BoxFit.cover,
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  // Gambar dengan Cache & Loading
+                                  CachedNetworkImage(
+                                    imageUrl: banner.imageUrl,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => Shimmer.fromColors(
+                                      baseColor: Colors.grey[300]!,
+                                      highlightColor: Colors.grey[100]!,
+                                      child: Container(color: Colors.white),
+                                    ),
+                                    errorWidget: (context, url, error) => Container(
+                                      color: Colors.grey[200],
+                                      child: const Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.broken_image, color: Colors.grey),
+                                          SizedBox(height: 4),
+                                          Text("Gagal memuat", style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  // Gradient Overlay agar tulisan terbaca
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                                        stops: const [0.5, 1.0],
+                                      ),
+                                    ),
+                                  ),
+                                  // Teks Judul Banner
+                                  Positioned(
+                                    bottom: 16,
+                                    left: 16,
+                                    right: 16,
+                                    child: Text(
+                                      banner.title, // Field title yang kita tambah
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white, 
+                                        fontWeight: FontWeight.bold, 
+                                        fontSize: 16
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  )
+                                ],
                               ),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 15, offset: const Offset(0, 8))],
                             ),
                           ),
                         );
@@ -335,7 +382,6 @@ class _HomeTabViewState extends State<HomeTabView> {
     );
   }
 
-  // [HELPER] BANNER STATIS (JIKA DB KOSONG)
   Widget _buildStaticPromoBanner() {
     return BouncyContainer(
       onTap: () {},

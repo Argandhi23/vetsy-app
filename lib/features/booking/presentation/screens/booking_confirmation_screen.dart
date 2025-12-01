@@ -37,9 +37,11 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   final TextEditingController _promoController = TextEditingController();
   
   late double _servicePrice;
-  double _adminFee = 2000;
+  final double _adminFee = 2000;
   double _discount = 0;
-  String _paymentMethod = "Tunai di Klinik"; 
+  
+  // [UBAH] Metode bayar di-hardcode jadi Tunai
+  final String _paymentMethod = "Tunai di Klinik"; 
 
   @override
   void initState() {
@@ -48,6 +50,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   }
 
   void _applyPromo() {
+    // Logika Promo Sederhana
     if (_promoController.text.trim().toUpperCase() == "VETSYNEW20") {
       setState(() {
         _discount = _servicePrice * 0.20;
@@ -67,66 +70,13 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
       create: (context) => sl<BookingCubit>(),
       child: BlocConsumer<BookingCubit, BookingState>(
         listener: (context, state) {
-          // [FIX 1] Handle Success (Tetap Sama)
           if (state.status == BookingPageStatus.success) {
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (ctx) => AlertDialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(EvaIcons.checkmarkCircle2, color: Colors.green, size: 80),
-                    const SizedBox(height: 16),
-                    Text("Booking Berhasil!", style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text("Silakan cek status di menu Jadwal.", style: GoogleFonts.poppins(color: Colors.grey), textAlign: TextAlign.center),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => context.go('/home'), 
-                        child: const Text("Selesai"),
-                      ),
-                    )
-                  ],
-                ),
-              ),
-            );
-          } 
-          // [FIX 2] Handle Error (Disempurnakan untuk Race Condition)
-          else if (state.status == BookingPageStatus.error) {
-            // Cek apakah errornya karena slot penuh (pesan dari backend tadi)
-            final bool isSlotTaken = state.errorMessage?.contains("diambil pengguna lain") ?? false;
-
-            showDialog(
-              context: context,
-              barrierDismissible: false, // User harus klik tombol OK
-              builder: (ctx) => AlertDialog(
-                title: Text("Booking Gagal", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.red)),
-                content: Text(
-                  state.errorMessage ?? "Terjadi kesalahan sistem.",
-                  style: GoogleFonts.poppins(),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(ctx); // Tutup dialog
-                      // Jika slot sudah diambil orang, kembalikan user ke layar sebelumnya untuk pilih jam lain
-                      if (isSlotTaken) {
-                        context.pop(); 
-                      }
-                    },
-                    child: const Text("OK, Pilih Jam Lain"),
-                  ),
-                ],
-              ),
-            );
+            _showSuccessDialog(context);
+          } else if (state.status == BookingPageStatus.error) {
+            _showErrorDialog(context, state.errorMessage);
           }
         },
         builder: (context, state) {
-          // Tampilkan Loading Full Screen saat submit
           if (state.status == BookingPageStatus.submitting) {
             return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }
@@ -134,16 +84,18 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
           return Scaffold(
             backgroundColor: Colors.grey[50],
             appBar: AppBar(
-              title: Text("Konfirmasi & Bayar", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.black)),
+              title: Text("Konfirmasi Booking", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.black)),
               backgroundColor: Colors.white,
               elevation: 0,
               leading: const BackButton(color: Colors.black),
+              centerTitle: true,
             ),
             body: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // --- RINCIAN LAYANAN ---
                   _buildSectionTitle("Rincian Layanan"),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -159,33 +111,45 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                   ),
                   const SizedBox(height: 24),
 
+                  // --- [UBAH] METODE PEMBAYARAN (Hanya Info) ---
                   _buildSectionTitle("Metode Pembayaran"),
                   Container(
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                    child: Column(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.green.shade100),
+                    ),
+                    child: Row(
                       children: [
-                        RadioListTile(
-                          value: "Tunai di Klinik",
-                          groupValue: _paymentMethod,
-                          onChanged: (val) => setState(() => _paymentMethod = val.toString()),
-                          title: Text("Tunai di Klinik", style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
-                          subtitle: Text("Bayar saat tindakan selesai", style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
-                          secondary: const Icon(Icons.money, color: Colors.green),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(EvaIcons.homeOutline, color: Colors.green),
                         ),
-                        const Divider(height: 1),
-                        RadioListTile(
-                          value: "Transfer Bank",
-                          groupValue: _paymentMethod,
-                          onChanged: (val) => setState(() => _paymentMethod = val.toString()),
-                          title: Text("Transfer Bank", style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
-                          subtitle: Text("Verifikasi manual oleh admin", style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
-                          secondary: const Icon(Icons.account_balance, color: Colors.blue),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Tunai di Klinik", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
+                              const SizedBox(height: 4),
+                              Text("Lakukan pembayaran di kasir setelah tindakan selesai.", 
+                                style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
 
+                  // --- KODE PROMO ---
                   _buildSectionTitle("Kode Promo"),
                   Row(
                     children: [
@@ -193,7 +157,8 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                         child: TextField(
                           controller: _promoController,
                           decoration: InputDecoration(
-                            hintText: "Masukkan kode VETSYNEW20",
+                            hintText: "Contoh: VETSYNEW20",
+                            hintStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
                             fillColor: Colors.white,
                             filled: true,
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -204,36 +169,45 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                       const SizedBox(width: 12),
                       ElevatedButton(
                         onPressed: _applyPromo,
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)
+                        ),
                         child: const Text("Pakai"),
                       )
                     ],
                   ),
                   const SizedBox(height: 24),
 
-                  _buildSectionTitle("Rincian Pembayaran"),
+                  // --- RINCIAN HARGA ---
+                  _buildSectionTitle("Rincian Biaya"),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
                     child: Column(
                       children: [
                         _buildPriceRow("Harga Layanan", currency.format(_servicePrice)),
-                        _buildPriceRow("Biaya Aplikasi", currency.format(_adminFee)),
+                        _buildPriceRow("Biaya Admin", currency.format(_adminFee)),
                         if (_discount > 0)
                           _buildPriceRow("Diskon Promo", "- ${currency.format(_discount)}", isDiscount: true),
                         const Divider(height: 24),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text("Total Bayar", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text("Estimasi Total", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
                             Text(currency.format(grandTotal), style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18, color: Theme.of(context).primaryColor)),
                           ],
                         ),
+                        const SizedBox(height: 8),
+                        Text("*Harga dapat berubah sesuai tindakan tambahan di klinik", 
+                          style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey, fontStyle: FontStyle.italic)),
                       ],
                     ),
                   ),
                   const SizedBox(height: 32),
 
+                  // --- TOMBOL SUBMIT ---
                   SizedBox(
                     width: double.infinity,
                     height: 54,
@@ -247,7 +221,8 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                           adminFee: _adminFee,
                           discountAmount: _discount,
                           grandTotal: grandTotal,
-                          paymentMethod: _paymentMethod,
+                          // [PENTING] Kirim payment method "Tunai di Klinik"
+                          paymentMethod: _paymentMethod, 
                           selectedPet: widget.pet,
                           selectedDate: widget.date,
                           selectedTime: widget.time,
@@ -257,9 +232,10 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                         backgroundColor: Theme.of(context).primaryColor,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
-                      child: Text("Bayar & Konfirmasi", style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      child: Text("Konfirmasi Booking", style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
                   ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -269,10 +245,12 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
     );
   }
 
+  // --- WIDGET HELPER ---
+
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, left: 4),
-      child: Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey[700])),
+      child: Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey[800])),
     );
   }
 
@@ -297,6 +275,58 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         children: [
           Text(label, style: GoogleFonts.poppins(color: Colors.black87)),
           Text(value, style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: isDiscount ? Colors.red : Colors.black87)),
+        ],
+      ),
+    );
+  }
+
+  // --- DIALOGS ---
+
+  void _showSuccessDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(EvaIcons.checkmarkCircle2, color: Colors.green, size: 80),
+            const SizedBox(height: 16),
+            Text("Booking Berhasil!", style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text("Silakan datang ke klinik sesuai jadwal.\nPembayaran dilakukan di kasir.", 
+              style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12), textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => context.go('/home'), 
+                child: const Text("Kembali ke Home"),
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showErrorDialog(BuildContext context, String? message) {
+    final bool isSlotTaken = message?.contains("diambil pengguna lain") ?? false;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Text("Gagal", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.red)),
+        content: Text(message ?? "Terjadi kesalahan sistem.", style: GoogleFonts.poppins()),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (isSlotTaken) context.pop();
+            },
+            child: const Text("OK"),
+          ),
         ],
       ),
     );

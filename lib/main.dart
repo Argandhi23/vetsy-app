@@ -17,8 +17,9 @@ import 'package:vetsy_app/features/pet/presentation/cubit/my_pets_cubit.dart';
 import 'package:vetsy_app/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:vetsy_app/features/clinic/presentation/cubit/clinic_cubit.dart';
 import 'package:vetsy_app/features/home/presentation/cubit/banner_cubit.dart';
-// [PENTING] Import NotificationCubit
 import 'package:vetsy_app/features/notification/presentation/cubit/notification_cubit.dart';
+// [BARU] Import PaymentCubit
+import 'package:vetsy_app/features/payment/presentation/cubit/payment_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,8 +30,9 @@ void main() async {
   
   await setupLocator();
   
-  // Inisialisasi Service Notifikasi (Izin, Channel, dll)
-  await sl<NotificationService>().init();
+  // Inisialisasi Service Notifikasi
+  // (Tidak di-await agar UI tidak stuck di splash screen Android)
+  sl<NotificationService>().init();
   
   await initializeDateFormatting('id_ID', null);
 
@@ -57,7 +59,7 @@ class _MainAppState extends State<MainApp> {
         sl<ProfileCubit>().fetchUserProfile();
         sl<ClinicCubit>().fetchClinics();
         
-        // [BARU] Aktifkan Pendengar Notifikasi (Agar bunyi saat admin update)
+        // Aktifkan Pendengar Notifikasi Realtime
         sl<NotificationCubit>().initNotificationListener();
 
       } else if (authState is Unauthenticated) {
@@ -65,7 +67,6 @@ class _MainAppState extends State<MainApp> {
         sl<MyPetsCubit>().reset();
         sl<MyBookingsCubit>().reset();
         sl<ProfileCubit>().reset();
-        // Listener notifikasi otomatis cancel via stream subscription di Cubit
       }
     });
   }
@@ -88,8 +89,10 @@ class _MainAppState extends State<MainApp> {
             BlocProvider(create: (context) => sl<ProfileCubit>()),
             BlocProvider(create: (context) => sl<ClinicCubit>()),
             BlocProvider(create: (context) => sl<BannerCubit>()..fetchBanners()),
-            // [BARU] Tambahkan NotificationCubit agar tersedia di app
             BlocProvider(create: (context) => sl<NotificationCubit>()),
+            
+            // [BARU] Daftarkan PaymentCubit di sini agar bisa dipakai di AdminBookingList
+            BlocProvider(create: (context) => PaymentCubit()),
           ],
           child: MaterialApp.router(
             title: 'Vetsy App',

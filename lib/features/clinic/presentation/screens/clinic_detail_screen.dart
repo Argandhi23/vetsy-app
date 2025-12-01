@@ -5,12 +5,14 @@ import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart'; // <-- IMPORT PENTING
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vetsy_app/core/config/locator.dart';
 import 'package:vetsy_app/core/widgets/responsive_constraint_box.dart';
 import 'package:vetsy_app/features/booking/presentation/screens/booking_screen.dart';
 import 'package:vetsy_app/features/clinic/domain/entities/service_entity.dart';
 import 'package:vetsy_app/features/clinic/presentation/cubit/clinic_detail/clinic_detail_cubit.dart';
+// [PENTING] Import Widget Dokter yang baru Anda buat
+import 'package:vetsy_app/features/clinic/presentation/widgets/veterinarian_list.dart';
 
 class ClinicDetailScreen extends StatelessWidget {
   static const String routeName = 'clinic-detail';
@@ -153,7 +155,7 @@ class ClinicDetailView extends StatelessWidget {
                           
                           const SizedBox(height: 24),
                           
-                          // --- TOMBOL KONTAK (BARU) ---
+                          // --- TOMBOL KONTAK ---
                           if (clinic.phone.isNotEmpty) 
                             Row(
                               children: [
@@ -186,6 +188,12 @@ class ClinicDetailView extends StatelessWidget {
                                 ),
                               ],
                             ),
+
+                          const SizedBox(height: 32),
+
+                          // --- [INTEGRASI BARU] LIST DOKTER ---
+                          VeterinarianList(clinicId: clinic.id),
+                          // ------------------------------------
 
                           const SizedBox(height: 32),
                           Text("Layanan Tersedia", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),

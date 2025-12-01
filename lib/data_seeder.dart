@@ -1,192 +1,182 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
-class DataSeeder {
+/// Halaman ini menggantikan fungsi Seeder lama.
+/// Gunakan halaman ini untuk memperbaiki data Payment yang tidak sinkron.
+class DataFixerScreen extends StatefulWidget {
+  const DataFixerScreen({super.key});
+
+  @override
+  State<DataFixerScreen> createState() => _DataFixerScreenState();
+}
+
+class _DataFixerScreenState extends State<DataFixerScreen> {
+  String _log = "Siap melakukan scanning data...\n";
+  bool _isLoading = false;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  Future<void> seed() async {
-    debugPrint('\n===================================================');
-    debugPrint('🧹 1. MEMBERSIHKAN DATA LAMA (AUTO-CLEAN)...');
-    debugPrint('===================================================');
-
-    // Hapus semua data lama dulu biar tidak numpuk/double
-    await _clearCollection('clinics');
-    await _clearCollection('services');
-    await _clearCollection('veterinarians');
-    await _clearCollection('reviews');
-    await _clearCollection('bookings'); 
-
-    debugPrint('\n===================================================');
-    debugPrint('🌱 2. MULAI SEEDING 3 KLINIK BARU...');
-    debugPrint('===================================================');
-
-    WriteBatch batch = firestore.batch();
-
-    // ==============================================
-    // 🏥 KLINIK 1: Vetsy Pusat (Lengkap)
-    // ==============================================
-    final clinicARef = firestore.collection('clinics').doc();
-    final String clinicAId = clinicARef.id;
-
-    batch.set(clinicARef, {
-      'id': clinicAId,
-      'name': 'Vetsy Care Center (Pusat)',
-      'address': 'Jl. Sahabat Satwa No. 1, Jakarta Selatan',
-      'description': 'Klinik hewan modern dengan fasilitas terlengkap dan dokter spesialis.',
-      'imageUrl': 'https://images.pexels.com/photos/6235233/pexels-photo-6235233.jpeg',
-      'rating': 4.9,
-      'totalReviews': 150,
-      'phone': '081234567890',
-      'openTime': '08:00',
-      'closeTime': '21:00',
-      'categories': ['Dokter', 'Grooming', 'Vaksinasi', 'Steril'],
-      'facilities': ['Pet Hotel', 'Grooming', 'USG', 'Operasi'],
+  // Fungsi untuk menambah log ke layar
+  void _addLog(String text) {
+    setState(() {
+      _log += "$text\n";
     });
-
-    // Service Klinik A (Mahal & Lengkap)
-    await _addServices(batch, clinicAId, [
-      {'name': 'Vaksin Lengkap (Tricat)', 'price': 185000, 'cat': 'Vaksinasi'},
-      {'name': 'Grooming Premium', 'price': 120000, 'cat': 'Grooming'},
-      {'name': 'Steril Kucing Jantan', 'price': 450000, 'cat': 'Steril'},
-      {'name': 'Konsultasi Spesialis', 'price': 150000, 'cat': 'Dokter'},
-    ]);
-
-    _addDummyBooking(batch, clinicAId, 'Vetsy Care Center', 'Mochi', 185000);
-
-
-    // ==============================================
-    // 🏥 KLINIK 2: Happy Paws (Fokus Grooming)
-    // ==============================================
-    final clinicBRef = firestore.collection('clinics').doc();
-    final String clinicBId = clinicBRef.id;
-
-    batch.set(clinicBRef, {
-      'id': clinicBId,
-      'name': 'Happy Paws Clinic',
-      'address': 'Jl. Melati Indah No. 45, Bandung',
-      'description': 'Spesialis perawatan bulu dan vaksinasi hewan kesayangan.',
-      'imageUrl': 'https://images.pexels.com/photos/1805164/pexels-photo-1805164.jpeg',
-      'rating': 4.5,
-      'totalReviews': 80,
-      'phone': '089876543210',
-      'openTime': '10:00',
-      'closeTime': '20:00',
-      'categories': ['Grooming', 'Vaksinasi'], // Cuma 2 kategori
-      'facilities': ['Parkir Luas', 'WiFi', 'Pet Shop'],
-    });
-
-    // Service Klinik B (Murah)
-    await _addServices(batch, clinicBId, [
-      {'name': 'Mandi Sehat', 'price': 70000, 'cat': 'Grooming'},
-      {'name': 'Vaksin Rabies', 'price': 150000, 'cat': 'Vaksinasi'},
-      {'name': 'Potong Kuku & Rapikan', 'price': 35000, 'cat': 'Grooming'},
-    ]);
-
-    _addDummyBooking(batch, clinicBId, 'Happy Paws', 'Bruno', 70000);
-
-
-    // ==============================================
-    // 🏥 KLINIK 3: Satwa Sejahtera (Fokus Medis)
-    // ==============================================
-    final clinicCRef = firestore.collection('clinics').doc();
-    final String clinicCId = clinicCRef.id;
-
-    batch.set(clinicCRef, {
-      'id': clinicCId,
-      'name': 'Klinik Satwa Sejahtera',
-      'address': 'Jl. Diponegoro No. 12, Surabaya',
-      'description': 'Klinik senior dengan layanan gawat darurat 24 jam.',
-      'imageUrl': 'https://images.pexels.com/photos/5749133/pexels-photo-5749133.jpeg',
-      'rating': 4.7,
-      'totalReviews': 210,
-      'phone': '081998877665',
-      'openTime': '24 Jam', // Buka terus
-      'closeTime': '24 Jam',
-      'categories': ['Dokter', 'Steril', 'Vaksinasi'],
-      'facilities': ['UGD 24 Jam', 'Rontgen', 'Lab Darah'],
-    });
-
-    // Service Klinik C (Medis Berat)
-    await _addServices(batch, clinicCId, [
-      {'name': 'Konsultasi Umum', 'price': 90000, 'cat': 'Dokter'},
-      {'name': 'Steril Kucing Betina', 'price': 800000, 'cat': 'Steril'},
-      {'name': 'Cek Darah Lengkap', 'price': 300000, 'cat': 'Dokter'},
-      {'name': 'Rawat Inap (Per Hari)', 'price': 150000, 'cat': 'Dokter'},
-    ]);
-
-    _addDummyBooking(batch, clinicCId, 'Satwa Sejahtera', 'Chiko', 150000);
-
-
-    // EKSEKUSI SEMUA
-    await batch.commit();
-
-    // ==============================================
-    // 🖨️ OUTPUT ID ADMIN
-    // ==============================================
-    debugPrint('\n✅ ===================================================');
-    debugPrint('✅ SEEDING SUKSES! DATA LAMA SUDAH BERSIH. 🗑️✨');
-    debugPrint('✅ SILAKAN PILIH ADMIN UNTUK SETIAP KLINIK:');
-    debugPrint('---------------------------------------------------');
-    debugPrint('👉 KLINIK 1 (Vetsy Pusat) ID:     $clinicAId');
-    debugPrint('👉 KLINIK 2 (Happy Paws) ID:      $clinicBId');
-    debugPrint('👉 KLINIK 3 (Satwa Sejahtera) ID: $clinicCId');
-    debugPrint('---------------------------------------------------');
-    debugPrint('ℹ️  Copy ID di atas -> Paste ke "clinicId" di Firestore User');
-    debugPrint('✅ ===================================================\n');
+    debugPrint(text);
   }
 
-  // --- HELPER: HAPUS DATA PER COLLECTION ---
-  Future<void> _clearCollection(String collectionName) async {
-    final snapshot = await firestore.collection(collectionName).limit(500).get();
-    
-    if (snapshot.docs.isEmpty) return;
+  // --- LOGIKA UTAMA PERBAIKAN DATA ---
+  Future<void> _fixPaymentStatus() async {
+    setState(() => _isLoading = true);
+    _log = ""; // Reset log
+    _addLog("🚀 MEMULAI SCANNING & PERBAIKAN DATA...");
 
-    WriteBatch batch = firestore.batch();
-    int count = 0;
+    int fixedCount = 0;
+    int createdCount = 0;
 
-    for (var doc in snapshot.docs) {
-      batch.delete(doc.reference);
-      count++;
-      // Commit per 400 dokumen (Batas Firestore 500)
-      if (count >= 400) {
-        await batch.commit();
-        batch = firestore.batch();
-        count = 0;
+    try {
+      // 1. AMBIL SEMUA BOOKING YANG SUDAH COMPLETED
+      // Kita hanya peduli pada booking yang statusnya sudah selesai/lunas
+      final bookingSnapshot = await firestore
+          .collection('bookings')
+          .where('status', isEqualTo: 'Completed')
+          .get();
+
+      _addLog("📦 Ditemukan ${bookingSnapshot.docs.length} Booking 'Completed'. Memeriksa payments...");
+
+      for (var bookingDoc in bookingSnapshot.docs) {
+        final bookingId = bookingDoc.id;
+        final userId = bookingDoc['userId'];
+        
+        // Cek apakah di booking status bayarnya sudah 'Paid'
+        // (Kadang ada yang status Completed tapi paymentStatus null/Unpaid, kita anggap Paid karena sudah Completed)
+        
+        // 2. CARI PAYMENT PASANGANNYA
+        final paymentQuery = await firestore
+            .collection('payments')
+            .where('bookingId', isEqualTo: bookingId)
+            .get();
+
+        if (paymentQuery.docs.isEmpty) {
+          // KASUS A: DATA PAYMENT HILANG / BELUM DIBUAT
+          _addLog("⚠️ Booking $bookingId: Payment TIDAK ADA. Membuat baru...");
+          
+          await firestore.collection('payments').add({
+            'bookingId': bookingId,
+            'userId': userId,
+            'clinicId': bookingDoc['clinicId'],
+            'amount': bookingDoc['grandTotal'] ?? 0,
+            'status': 'Success', // Langsung Success
+            'method': bookingDoc['paymentMethod'] ?? 'Tunai (Fixer)',
+            'transactionDate': bookingDoc['scheduleDate'] ?? FieldValue.serverTimestamp(),
+            'invoiceNumber': 'INV-FIX-${DateTime.now().millisecondsSinceEpoch}',
+            'note': 'Generated by DataFixer',
+          });
+          
+          createdCount++;
+          _addLog("✅ Payment Baru Dibuat (Success).");
+
+        } else {
+          // KASUS B: DATA PAYMENT ADA, TAPI STATUS SALAH (PENDING/FAILED)
+          for (var paymentDoc in paymentQuery.docs) {
+            final currentStatus = paymentDoc['status'];
+            
+            if (currentStatus != 'Success') {
+              _addLog("🛠️ Booking $bookingId: Status Payment '$currentStatus' -> Diperbaiki ke 'Success'");
+              await paymentDoc.reference.update({'status': 'Success'});
+              fixedCount++;
+            }
+          }
+        }
       }
-    }
-    if (count > 0) await batch.commit();
-    
-    debugPrint('🗑️  Collection "$collectionName" BERSIH.');
-  }
 
-  // --- HELPER: TAMBAH SERVICES ---
-  Future<void> _addServices(WriteBatch batch, String clinicId, List<Map> services) async {
-    for (var s in services) {
-      final ref = firestore.collection('services').doc();
-      batch.set(ref, {
-        'id': ref.id,
-        'clinicId': clinicId,
-        'name': s['name'],
-        'price': s['price'],
-        'category': s['cat'],
-      });
+      _addLog("\n==========================================");
+      _addLog("🏁 PROSES SELESAI!");
+      _addLog("✅ Data Diperbaiki (Update): $fixedCount");
+      _addLog("✅ Data Dibuat Baru (Create): $createdCount");
+      _addLog("==========================================");
+
+    } catch (e) {
+      _addLog("❌ TERJADI ERROR: $e");
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
-  // --- HELPER: TAMBAH DUMMY BOOKING ---
-  void _addDummyBooking(WriteBatch batch, String clinicId, String clinicName, String petName, int total) {
-    final ref = firestore.collection('bookings').doc();
-    batch.set(ref, {
-      'id': ref.id,
-      'userId': 'user_dummy',
-      'clinicId': clinicId,
-      'clinicName': clinicName,
-      'petName': petName,
-      'service': {'name': 'Layanan Contoh', 'price': total},
-      'scheduleDate': Timestamp.now(),
-      'status': 'Pending',
-      'paymentStatus': 'Unpaid',
-      'grandTotal': total,
-    });
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Perbaikan Database", style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.red[700],
+        foregroundColor: Colors.white,
+      ),
+      backgroundColor: Colors.grey[100],
+      body: Column(
+        children: [
+          // Header Info
+          Container(
+            padding: const EdgeInsets.all(20),
+            color: Colors.white,
+            child: Column(
+              children: [
+                const Icon(Icons.healing, size: 50, color: Colors.red),
+                const SizedBox(height: 10),
+                const Text(
+                  "Fitur ini akan mensinkronkan status 'Booking' dan 'Payment'.\nBooking yang sudah 'Completed' akan dipaksa memiliki Payment 'Success'.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          
+          // Area Log Terminal
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: SingleChildScrollView(
+                reverse: true, // Auto scroll ke bawah
+                child: Text(
+                  _log, 
+                  style: const TextStyle(
+                    color: Colors.greenAccent, 
+                    fontFamily: 'monospace', 
+                    fontSize: 12
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Tombol Aksi
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton.icon(
+                onPressed: _isLoading ? null : _fixPaymentStatus,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[700],
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: _isLoading 
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Icon(Icons.build_circle, color: Colors.white), 
+                label: Text(
+                  _isLoading ? "Sedang Memproses..." : "MULAI PERBAIKAN SEKARANG",
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

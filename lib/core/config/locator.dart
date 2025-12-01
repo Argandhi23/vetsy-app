@@ -83,7 +83,6 @@ Future<void> setupLocator() async {
     getMyPetsUseCase: sl(),
     createBookingUseCase: sl(),
     firebaseAuth: sl(),
-    myBookingsCubit: sl(),
     bookingRepository: sl(),
   ));
 
