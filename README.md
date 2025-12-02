@@ -26,7 +26,7 @@ Dibuat oleh:
 
 2. Febriana Nur Aini (24111814006)
 
-3. 
+3. Muhammad Dava Khoirur Roziqy (24111814068)
 
 4. 
 
