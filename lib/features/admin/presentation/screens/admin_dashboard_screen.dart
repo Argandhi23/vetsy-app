@@ -16,13 +16,21 @@ class AdminDashboardScreen extends StatefulWidget {
   State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
 }
 
-class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
+  late TabController _tabController;
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -38,84 +46,33 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         if (state is Authenticated) clinicId = state.clinicId;
 
         if (clinicId == null) {
-          return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(EvaIcons.alertTriangleOutline, size: 50, color: Colors.orange),
-                  const SizedBox(height: 16),
-                  const Text("Error: Bukan Admin / ID Klinik Hilang"),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => context.read<AuthCubit>().signOut(),
-                    child: const Text("Logout"),
-                  )
-                ],
-              ),
-            ),
-          );
+          return _buildErrorState(context);
         }
 
         return Scaffold(
-          backgroundColor: Colors.grey[50],
+          backgroundColor: const Color(0xFFF5F7FA), // Background abu kebiruan modern
           body: Column(
             children: [
               // HEADER & STATISTIK
               _buildHeaderSection(context, clinicId),
 
-              // SEARCH BAR
-              _buildSearchBar(),
-
-              // TAB VIEW (LIST BOOKING)
+              // TAB BAR & CONTENT
               Expanded(
-                child: DefaultTabController(
-                  length: 3,
-                  child: Column(
-                    children: [
-                      Container(
-                        color: Colors.white,
-                        child: TabBar(
-                          labelColor: Theme.of(context).primaryColor,
-                          unselectedLabelColor: Colors.grey,
-                          indicatorColor: Theme.of(context).primaryColor,
-                          indicatorWeight: 3,
-                          labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                          tabs: const [
-                            Tab(text: 'Baru'),
-                            Tab(text: 'Proses'),
-                            Tab(text: 'Riwayat'),
-                          ],
-                        ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    _buildModernTabBar(),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          AdminBookingList(clinicId: clinicId, statusFilter: 'Pending', searchQuery: _searchQuery),
+                          AdminBookingList(clinicId: clinicId, statusFilter: 'InProgress', searchQuery: _searchQuery),
+                          AdminBookingList(clinicId: clinicId, statusFilter: 'Completed', searchQuery: _searchQuery),
+                        ],
                       ),
-                      Expanded(
-                        child: TabBarView(
-                          children: [
-                            // Tab 1: Menunggu (Pending)
-                            AdminBookingList(
-                              clinicId: clinicId, 
-                              statusFilter: 'Pending', 
-                              searchQuery: _searchQuery
-                            ),
-                            
-                            // Tab 2: Dikerjakan (InProgress) - [PERBAIKAN UTAMA]
-                            AdminBookingList(
-                              clinicId: clinicId, 
-                              statusFilter: 'InProgress', 
-                              searchQuery: _searchQuery
-                            ),
-                            
-                            // Tab 3: Selesai (Completed/Cancelled)
-                            AdminBookingList(
-                              clinicId: clinicId, 
-                              statusFilter: 'Completed', 
-                              searchQuery: _searchQuery
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -124,6 +81,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       },
     );
   }
+
+  // --- WIDGETS ---
 
   Widget _buildHeaderSection(BuildContext context, String clinicId) {
     return StreamBuilder<QuerySnapshot>(
@@ -136,63 +95,95 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
         if (snapshot.hasData) {
           final docs = snapshot.data!.docs;
-          // Hitung status 'Pending'
           pending = docs.where((d) => d['status'] == 'Pending').length;
-          
-          // [PERBAIKAN] Hitung 'InProgress' atau 'Confirmed' sebagai Proses
-          process = docs.where((d) => 
-            ['InProgress', 'Confirmed'].contains(d['status'])
-          ).length;
-          
-          // Hitung Selesai/Batal
-          done = docs.where((d) => 
-            ['Completed', 'Cancelled', 'Rejected'].contains(d['status'])
-          ).length;
+          process = docs.where((d) => ['InProgress', 'Confirmed'].contains(d['status'])).length;
+          done = docs.where((d) => ['Completed', 'Cancelled', 'Rejected'].contains(d['status'])).length;
         }
 
         return Container(
           padding: const EdgeInsets.fromLTRB(24, 50, 24, 24),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Theme.of(context).primaryColor, Colors.blue[800]!],
-              begin: Alignment.topLeft, end: Alignment.bottomRight,
-            ),
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-            boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))],
+            color: Colors.white,
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+            boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))],
           ),
           child: Column(
             children: [
+              // Top Bar: Welcome & Logout
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text("Admin Panel", style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12)),
-                    Text("Dashboard Klinik", style: GoogleFonts.poppins(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text("Dashboard Admin", style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 12, fontWeight: FontWeight.w500)),
+                    Text("Ringkasan Klinik", style: GoogleFonts.poppins(color: Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
                   ]),
-                  IconButton(
-                    onPressed: () => _showLogoutDialog(context),
-                    icon: const Icon(EvaIcons.logOutOutline, color: Colors.white),
+                  Container(
+                    decoration: BoxDecoration(color: Colors.red[50], borderRadius: BorderRadius.circular(12)),
+                    child: IconButton(
+                      onPressed: () => _showLogoutDialog(context),
+                      icon: const Icon(EvaIcons.logOutOutline, color: Colors.red),
+                      tooltip: 'Logout',
+                    ),
                   )
                 ],
               ),
+              
               const SizedBox(height: 24),
+
+              // Search Bar
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) => setState(() => _searchQuery = val),
+                  style: GoogleFonts.poppins(color: Colors.black87),
+                  decoration: InputDecoration(
+                    hintText: 'Cari booking, pasien, layanan...',
+                    hintStyle: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 14),
+                    prefixIcon: const Icon(EvaIcons.searchOutline, color: Colors.grey),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(icon: const Icon(EvaIcons.close, color: Colors.grey), onPressed: () { _searchController.clear(); setState(() => _searchQuery = ''); })
+                        : null,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Stat Cards
+              Row(children: [
+                Expanded(child: AdminStatCard(label: "Menunggu", value: "$pending", color: Colors.orange, icon: EvaIcons.loaderOutline)),
+                const SizedBox(width: 12),
+                Expanded(child: AdminStatCard(label: "Dikerjakan", value: "$process", color: Colors.blue, icon: EvaIcons.activityOutline)),
+                const SizedBox(width: 12),
+                Expanded(child: AdminStatCard(label: "Selesai", value: "$done", color: Colors.green, icon: EvaIcons.checkmarkCircle2Outline)),
+              ]),
+
+              const SizedBox(height: 16),
+
+              // Tombol Kelola Layanan (WARNA DIPERBAIKI)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ManageServicesScreen(clinicId: clinicId))),
-                  icon: const Icon(EvaIcons.settings2Outline, color: Colors.white),
-                  label: const Text("Kelola Daftar Layanan & Harga"),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.2), foregroundColor: Colors.white, elevation: 0, padding: const EdgeInsets.symmetric(vertical: 12)),
+                  icon: const Icon(EvaIcons.settings2Outline, size: 18),
+                  label: const Text("Atur Layanan & Harga"),
+                  style: ElevatedButton.styleFrom(
+                    // [PERBAIKAN] Menggunakan Primary Color (Biru)
+                    backgroundColor: Theme.of(context).primaryColor, 
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 4, // Tambah sedikit elevasi biar menonjol
+                    shadowColor: Theme.of(context).primaryColor.withOpacity(0.4),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
-              Row(children: [
-                Expanded(child: AdminStatCard(label: "Menunggu", value: "$pending", color: Colors.orange, icon: EvaIcons.loaderOutline)),
-                const SizedBox(width: 12),
-                Expanded(child: AdminStatCard(label: "Dikerjakan", value: "$process", color: Colors.lightBlue, icon: EvaIcons.activityOutline)),
-                const SizedBox(width: 12),
-                Expanded(child: AdminStatCard(label: "Selesai", value: "$done", color: Colors.green, icon: EvaIcons.checkmarkCircle2Outline)),
-              ]),
             ],
           ),
         );
@@ -200,22 +191,52 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildModernTabBar() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
-      child: TextField(
-        controller: _searchController,
-        onChanged: (val) => setState(() => _searchQuery = val),
-        decoration: InputDecoration(
-          hintText: 'Cari nama pasien atau layanan...',
-          prefixIcon: const Icon(EvaIcons.searchOutline, color: Colors.grey),
-          filled: true, fillColor: Colors.grey[100],
-          contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(icon: const Icon(EvaIcons.close, color: Colors.grey), onPressed: () { _searchController.clear(); setState(() => _searchQuery = ''); })
-              : null,
+      height: 45,
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))],
+      ),
+      child: TabBar(
+        controller: _tabController,
+        indicator: BoxDecoration(
+          borderRadius: BorderRadius.circular(25),
+          color: Theme.of(context).primaryColor,
+          boxShadow: [BoxShadow(color: Theme.of(context).primaryColor.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
+        ),
+        labelColor: Colors.white,
+        unselectedLabelColor: Colors.grey[600],
+        labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent, // Hapus garis bawah default
+        tabs: const [
+          Tab(text: 'Baru'),
+          Tab(text: 'Proses'),
+          Tab(text: 'Riwayat'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(EvaIcons.alertTriangleOutline, size: 60, color: Colors.orange),
+            const SizedBox(height: 16),
+            Text("Akses Ditolak", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text("Akun ini bukan admin klinik.", style: GoogleFonts.poppins(color: Colors.grey)),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => context.read<AuthCubit>().signOut(),
+              child: const Text("Logout"),
+            )
+          ],
         ),
       ),
     );
@@ -226,16 +247,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
-        title: const Text("Logout"),
-        content: const Text("Keluar dari admin?"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Konfirmasi Logout"),
+        content: const Text("Apakah Anda yakin ingin keluar dari panel admin?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
-          TextButton(
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal", style: TextStyle(color: Colors.grey))),
+          ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
               context.read<AuthCubit>().signOut();
             },
-            child: const Text("Keluar", style: TextStyle(color: Colors.red)),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: const Text("Keluar"),
           ),
         ],
       ),

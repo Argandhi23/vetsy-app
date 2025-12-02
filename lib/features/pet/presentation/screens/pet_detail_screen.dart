@@ -70,8 +70,8 @@ class PetDetailScreen extends StatelessWidget {
                     boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 8))],
                   ),
                   child: Icon(
-                    pet.type == 'Kucing' ? EvaIcons.github : EvaIcons.heart, 
-                    size: 50, 
+                    pet.type == 'Kucing' ? EvaIcons.github : EvaIcons.heart,
+                    size: 50,
                     color: Colors.blue
                   ),
                 ),
@@ -92,7 +92,7 @@ class PetDetailScreen extends StatelessWidget {
           ),
 
           const SizedBox(height: 24),
-          
+
           // 2. TOMBOL CATAT & JUDUL
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -100,7 +100,7 @@ class PetDetailScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text("Buku Kesehatan", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
-                
+
                 // Tombol Catat Modern
                 Material(
                   color: Colors.transparent,
@@ -136,9 +136,17 @@ class PetDetailScreen extends StatelessWidget {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                
+
+                if (snapshot.hasError) {
+                  // tampilkan error di UI supaya mudah dideteksi
+                  print('Stream error in PetDetailScreen: ${snapshot.error}');
+                  return Center(child: Text('Gagal memuat catatan: ${snapshot.error}'));
+                }
+
                 // EMPTY STATE
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  // debug print
+                  print('Medical records empty for pet ${pet.id}. snapshot.hasData=${snapshot.hasData} length=${snapshot.data?.length}');
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -217,11 +225,14 @@ class PetDetailScreen extends StatelessWidget {
     );
   }
 
-  // === DIALOG INPUT MODERN ===
+  // === DIALOG INPUT MODERN (SUDAH DIPERBAIKI) ===
   void _showAddRecordDialog(BuildContext context, String petId) {
     final titleCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
-    
+
+    // capture cubit before dialog (safe)
+    final myPetsCubit = context.read<MyPetsCubit>();
+
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -252,7 +263,7 @@ class PetDetailScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    
+
                     Center(
                       child: Text(
                         "Tambah Catatan",
@@ -276,7 +287,7 @@ class PetDetailScreen extends StatelessWidget {
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 16),
 
                     // Input Keterangan
@@ -314,15 +325,45 @@ class PetDetailScreen extends StatelessWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () {
-                              if (titleCtrl.text.isNotEmpty) {
-                                context.read<MyPetsCubit>().addMedicalRecord(
-                                  petId: petId,
-                                  title: titleCtrl.text,
-                                  notes: notesCtrl.text,
-                                  date: DateTime.now(),
+                            onPressed: () async {
+                              final title = titleCtrl.text.trim();
+                              final notes = notesCtrl.text.trim();
+
+                              if (title.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("Judul tidak boleh kosong"), backgroundColor: Colors.orange),
                                 );
+                                return;
+                              }
+
+                              // Show loading indicator (rootNavigator supaya berada di atas dialog)
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (_) => const Center(child: CircularProgressIndicator()),
+                              );
+
+                              final success = await myPetsCubit.addMedicalRecord(
+                                petId: petId,
+                                title: title,
+                                notes: notes,
+                                date: DateTime.now(),
+                              );
+
+                              // Close loading
+                              Navigator.of(context, rootNavigator: true).pop();
+
+                              if (success) {
+                                // Close add dialog
                                 Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("Catatan medis berhasil disimpan!"), backgroundColor: Colors.green),
+                                );
+                              } else {
+                                // Keep dialog open so user can retry
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("Gagal menyimpan catatan. Coba lagi."), backgroundColor: Colors.red),
+                                );
                               }
                             },
                             style: ElevatedButton.styleFrom(

@@ -33,7 +33,7 @@ class MyPetsCubit extends Cubit<MyPetsState> {
   // --- STREAM REALTIME ---
   Future<void> fetchMyPets() async {
     emit(state.copyWith(status: MyPetsStatus.loading));
-    
+
     await _petsSubscription?.cancel();
 
     _petsSubscription = petRepository.getMyPetsStream().listen(
@@ -57,7 +57,7 @@ class MyPetsCubit extends Cubit<MyPetsState> {
     final result = await addPetUseCase(name: name, type: type, breed: breed, age: age, weight: weight);
     result.fold(
       (failure) => emit(state.copyWith(status: MyPetsStatus.error, errorMessage: failure.message)),
-      (_) {}, // Stream akan update otomatis
+      (_) {},
     );
   }
 
@@ -65,7 +65,7 @@ class MyPetsCubit extends Cubit<MyPetsState> {
     emit(state.copyWith(status: MyPetsStatus.submitting));
     final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     final petToUpdate = PetEntity(id: id, userId: userId, name: name, type: type, breed: breed, age: age, weight: weight);
-    
+
     final result = await updatePetUseCase(petToUpdate);
     result.fold(
       (failure) => emit(state.copyWith(status: MyPetsStatus.error, errorMessage: failure.message)),
@@ -85,23 +85,60 @@ class MyPetsCubit extends Cubit<MyPetsState> {
     );
   }
 
-  // --- Medical Record Logic (Root Collection) ---
+  // --- Medical Record Logic (Root Collection 'medical_records') ---
+  // Mengembalikan Stream yang memetakan DocumentSnapshot ke MedicalRecordModel
   Stream<List<MedicalRecordModel>> getMedicalRecords(String petId) {
-    return _firestore
-        .collection('medical_records')
-        .where('petId', isEqualTo: petId)
-        .orderBy('date', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => MedicalRecordModel.fromFirestore(doc)).toList());
+    try {
+      return _firestore
+          .collection('medical_records')
+          .where('petId', isEqualTo: petId)
+          .orderBy('date', descending: true)
+          .snapshots()
+          .map((snapshot) => snapshot.docs
+              .map((doc) {
+                try {
+                  return MedicalRecordModel.fromFirestore(doc);
+                } catch (e, st) {
+                  // Log parsing error dan kembalikan record dummy agar stream tidak gagal
+                  print('Failed to parse medical record ${doc.id}: $e\n$st');
+                  return MedicalRecordModel(
+                    id: doc.id,
+                    title: (doc.data() as Map<String, dynamic>?)?['title']?.toString() ?? '',
+                    notes: (doc.data() as Map<String, dynamic>?)?['notes']?.toString() ?? '',
+                    date: DateTime.now(),
+                    petId: (doc.data() as Map<String, dynamic>?)?['petId']?.toString(),
+                  );
+                }
+              })
+              .toList());
+    } catch (e, st) {
+      // Jika query throw (mis. karena orderBy pada field yang tidak ada), kembalikan stream kosong dengan error log
+      print('getMedicalRecords query failed: $e\n$st');
+      return Stream.value([]);
+    }
   }
 
-  Future<void> addMedicalRecord({required String petId, required String title, required String notes, required DateTime date}) async {
-    await _firestore.collection('medical_records').add({
-      'petId': petId,
-      'title': title,
-      'notes': notes,
-      'date': Timestamp.fromDate(date),
-    });
+  // Mengembalikan bool agar UI bisa menunggu & menampilkan pesan error jika perlu
+  Future<bool> addMedicalRecord({
+    required String petId,
+    required String title,
+    required String notes,
+    required DateTime date,
+  }) async {
+    try {
+      final map = {
+        'petId': petId,
+        'title': title,
+        'notes': notes,
+        'date': Timestamp.fromDate(date),
+      };
+      final docRef = await _firestore.collection('medical_records').add(map);
+      print('Medical record added: ${docRef.id}');
+      return true;
+    } catch (e, st) {
+      print('Failed to add medical record: $e\n$st');
+      return false;
+    }
   }
 
   @override

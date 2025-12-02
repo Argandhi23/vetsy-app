@@ -19,9 +19,9 @@ class _AddPetFormState extends State<AddPetForm> {
   final _breedController = TextEditingController();
   final _ageController = TextEditingController();
   final _weightController = TextEditingController();
-  
+
   // Ganti Text Controller dengan Choice Chip untuk Type
-  String _selectedType = 'Kucing'; 
+  String _selectedType = 'Kucing';
 
   bool get _isEditing => widget.petToEdit != null;
 
@@ -53,21 +53,21 @@ class _AddPetFormState extends State<AddPetForm> {
 
       if (_isEditing) {
         context.read<MyPetsCubit>().updatePet(
-              id: widget.petToEdit!.id,
-              name: _nameController.text,
-              type: _selectedType,
-              breed: _breedController.text,
-              age: age,
-              weight: weight,
-            );
+          id: widget.petToEdit!.id,
+          name: _nameController.text,
+          type: _selectedType,
+          breed: _breedController.text,
+          age: age,
+          weight: weight,
+        );
       } else {
         context.read<MyPetsCubit>().addPet(
-              name: _nameController.text,
-              type: _selectedType,
-              breed: _breedController.text,
-              age: age,
-              weight: weight,
-            );
+          name: _nameController.text,
+          type: _selectedType,
+          breed: _breedController.text,
+          age: age,
+          weight: weight,
+        );
       }
       Navigator.of(context).pop();
     }
@@ -78,7 +78,9 @@ class _AddPetFormState extends State<AddPetForm> {
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
-        left: 24, right: 24, top: 24,
+        left: 24,
+        right: 24,
+        top: 24,
       ),
       child: Form(
         key: _formKey,
@@ -88,38 +90,39 @@ class _AddPetFormState extends State<AddPetForm> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Handle Bar
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
 
               Text(
                 _isEditing ? 'Edit Data Hewan' : 'Tambah Hewan Baru',
-                style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold),
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              
-              // Avatar Mockup
+
+              // Avatar Mockup tanpa tombol kamera
               Center(
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 100, height: 100,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Icon(Icons.pets, size: 50, color: Colors.grey[400]),
-                    ),
-                    Positioned(
-                      bottom: 0, right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(color: Theme.of(context).primaryColor, shape: BoxShape.circle),
-                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
-                      ),
-                    )
-                  ],
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Icon(Icons.pets, size: 50, color: Colors.grey[400]),
                 ),
               ),
               const SizedBox(height: 24),
@@ -131,9 +134,12 @@ class _AddPetFormState extends State<AddPetForm> {
                 validator: (val) => val!.isEmpty ? 'Wajib diisi' : null,
               ),
               const SizedBox(height: 16),
-              
+
               // Type Selector (Chips)
-              Text("Jenis Hewan", style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              Text(
+                "Jenis Hewan",
+                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -148,7 +154,10 @@ class _AddPetFormState extends State<AddPetForm> {
 
               TextFormField(
                 controller: _breedController,
-                decoration: _inputDeco('Ras (cth: Persia)', EvaIcons.pricetagsOutline),
+                decoration: _inputDeco(
+                  'Ras (cth: Persia)',
+                  EvaIcons.pricetagsOutline,
+                ),
                 validator: (val) => val!.isEmpty ? 'Wajib' : null,
               ),
               const SizedBox(height: 16),
@@ -159,7 +168,10 @@ class _AddPetFormState extends State<AddPetForm> {
                     child: TextFormField(
                       controller: _ageController,
                       keyboardType: TextInputType.number,
-                      decoration: _inputDeco('Umur (Bln)', EvaIcons.calendarOutline),
+                      decoration: _inputDeco(
+                        'Umur (Bln)',
+                        EvaIcons.calendarOutline,
+                      ),
                       validator: (val) => val!.isEmpty ? 'Wajib' : null,
                     ),
                   ),
@@ -167,8 +179,13 @@ class _AddPetFormState extends State<AddPetForm> {
                   Expanded(
                     child: TextFormField(
                       controller: _weightController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: _inputDeco('Berat (Kg)', EvaIcons.barChart2Outline),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: _inputDeco(
+                        'Berat (Kg)',
+                        EvaIcons.barChart2Outline,
+                      ),
                       validator: (val) => val!.isEmpty ? 'Wajib' : null,
                     ),
                   ),
@@ -182,10 +199,18 @@ class _AddPetFormState extends State<AddPetForm> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).primaryColor,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   onPressed: _submit,
-                  child: Text(_isEditing ? 'Simpan Perubahan' : 'Simpan Hewan', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    _isEditing ? 'Simpan Perubahan' : 'Simpan Hewan',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -210,9 +235,11 @@ class _AddPetFormState extends State<AddPetForm> {
       backgroundColor: Colors.grey[100],
       labelStyle: TextStyle(
         color: isSelected ? Theme.of(context).primaryColor : Colors.black,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
-      side: BorderSide(color: isSelected ? Theme.of(context).primaryColor : Colors.transparent),
+      side: BorderSide(
+        color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
+      ),
     );
   }
 
@@ -220,7 +247,10 @@ class _AddPetFormState extends State<AddPetForm> {
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon, color: Colors.grey),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
       filled: true,
       fillColor: Colors.grey[100],
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
